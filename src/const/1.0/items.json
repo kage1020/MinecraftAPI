@@ -1,0 +1,1815 @@
+[
+  {
+    "id": 0,
+    "name": "iron_shovel",
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 250,
+      "material": "iron",
+      "damage": 3,
+      "effectiveBlocks": [
+        2,
+        3,
+        12,
+        13,
+        60,
+        78,
+        80,
+        82,
+        88,
+        110
+      ]
+    }
+  },
+  {
+    "id": 1,
+    "name": "iron_pickaxe",
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 250,
+      "material": "iron",
+      "damage": 4,
+      "effectiveBlocks": [
+        1,
+        4,
+        14,
+        15,
+        16,
+        21,
+        22,
+        24,
+        27,
+        28,
+        41,
+        42,
+        43,
+        44,
+        45,
+        48,
+        56,
+        57,
+        66,
+        73,
+        74,
+        79,
+        87,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "name": "iron_axe",
+    "displays": {
+      "en": "Iron Axe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 250,
+      "material": "iron",
+      "damage": 5,
+      "effectiveBlocks": [
+        5,
+        17,
+        47,
+        54,
+        86,
+        91,
+        127,
+        128,
+        154,
+        155
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "name": "flint_and_steel",
+    "displays": {
+      "en": "Flint and Steel"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 64,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 4,
+    "name": "apple",
+    "displays": {
+      "en": "Apple"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 4,
+      "saturation": 0.3
+    }
+  },
+  {
+    "id": 5,
+    "name": "bow",
+    "displays": {
+      "en": "Bow"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 384
+    }
+  },
+  {
+    "id": 6,
+    "name": "arrow",
+    "displays": {
+      "en": "Arrow"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 7,
+    "name": "coal",
+    "displays": {
+      "en": "Coal"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 8,
+    "name": "diamond",
+    "displays": {
+      "en": "Diamond"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 9,
+    "name": "iron_ingot",
+    "displays": {
+      "en": "Iron Ingot"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 10,
+    "name": "gold_ingot",
+    "displays": {
+      "en": "Gold Ingot"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 11,
+    "name": "iron_sword",
+    "displays": {
+      "en": "Iron Sword"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 250,
+      "material": "iron",
+      "damage": 6,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 12,
+    "name": "wooden_sword",
+    "displays": {
+      "en": "Wooden Sword"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 59,
+      "material": "wood",
+      "damage": 4,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 13,
+    "name": "wooden_shovel",
+    "displays": {
+      "en": "Wooden Shovel"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 59,
+      "material": "wood",
+      "damage": 2,
+      "effectiveBlocks": [
+        2,
+        3,
+        12,
+        13,
+        60,
+        78,
+        80,
+        82,
+        88,
+        110
+      ]
+    }
+  },
+  {
+    "id": 14,
+    "name": "wooden_pickaxe",
+    "displays": {
+      "en": "Wooden Pickaxe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 59,
+      "material": "wood",
+      "damage": 2,
+      "effectiveBlocks": [
+        1,
+        4,
+        14,
+        15,
+        16,
+        21,
+        22,
+        24,
+        27,
+        28,
+        41,
+        42,
+        43,
+        44,
+        45,
+        48,
+        56,
+        57,
+        66,
+        73,
+        74,
+        79,
+        87,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132
+      ]
+    }
+  },
+  {
+    "id": 15,
+    "name": "wooden_axe",
+    "displays": {
+      "en": "Wooden Axe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 59,
+      "material": "wood",
+      "damage": 3,
+      "effectiveBlocks": [
+        5,
+        17,
+        47,
+        54,
+        86,
+        91,
+        127,
+        128,
+        154,
+        155
+      ]
+    }
+  },
+  {
+    "id": 16,
+    "name": "stone_sword",
+    "displays": {
+      "en": "Stone Sword"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 131,
+      "material": "stone",
+      "damage": 5,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 17,
+    "name": "stone_shovel",
+    "displays": {
+      "en": "Stone Shovel"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 131,
+      "material": "stone",
+      "damage": 3,
+      "effectiveBlocks": [
+        2,
+        3,
+        12,
+        13,
+        60,
+        78,
+        80,
+        82,
+        88,
+        110
+      ]
+    }
+  },
+  {
+    "id": 18,
+    "name": "stone_pickaxe",
+    "displays": {
+      "en": "Stone Pickaxe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 131,
+      "material": "stone",
+      "damage": 4,
+      "effectiveBlocks": [
+        1,
+        4,
+        14,
+        15,
+        16,
+        21,
+        22,
+        24,
+        27,
+        28,
+        41,
+        42,
+        43,
+        44,
+        45,
+        48,
+        56,
+        57,
+        66,
+        73,
+        74,
+        79,
+        87,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132
+      ]
+    }
+  },
+  {
+    "id": 19,
+    "name": "stone_axe",
+    "displays": {
+      "en": "Stone Axe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 131,
+      "material": "stone",
+      "damage": 5,
+      "effectiveBlocks": [
+        5,
+        17,
+        47,
+        54,
+        86,
+        91,
+        127,
+        128,
+        154,
+        155
+      ]
+    }
+  },
+  {
+    "id": 20,
+    "name": "diamond_sword",
+    "displays": {
+      "en": "Diamond Sword"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 1561,
+      "material": "diamond",
+      "damage": 7,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 21,
+    "name": "diamond_shovel",
+    "displays": {
+      "en": "Diamond Shovel"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 1561,
+      "material": "diamond",
+      "damage": 5,
+      "effectiveBlocks": [
+        2,
+        3,
+        12,
+        13,
+        60,
+        78,
+        80,
+        82,
+        88,
+        110
+      ]
+    }
+  },
+  {
+    "id": 22,
+    "name": "diamond_pickaxe",
+    "displays": {
+      "en": "Diamond Pickaxe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 1561,
+      "material": "diamond",
+      "damage": 6,
+      "effectiveBlocks": [
+        1,
+        4,
+        14,
+        15,
+        16,
+        21,
+        22,
+        24,
+        27,
+        28,
+        41,
+        42,
+        43,
+        44,
+        45,
+        48,
+        56,
+        57,
+        66,
+        73,
+        74,
+        79,
+        87,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132
+      ]
+    }
+  },
+  {
+    "id": 23,
+    "name": "diamond_axe",
+    "displays": {
+      "en": "Diamond Axe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 1561,
+      "material": "diamond",
+      "damage": 9,
+      "effectiveBlocks": [
+        5,
+        17,
+        47,
+        54,
+        86,
+        91,
+        127,
+        128,
+        154,
+        155
+      ]
+    }
+  },
+  {
+    "id": 24,
+    "name": "stick",
+    "displays": {
+      "en": "Stick"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 25,
+    "name": "bowl",
+    "displays": {
+      "en": "Bowl"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 26,
+    "name": "mushroom_stew",
+    "displays": {
+      "en": "Mushroom Stew"
+    },
+    "maxStackSize": 1,
+    "food": {
+      "amount": 8,
+      "saturation": 0.6
+    }
+  },
+  {
+    "id": 27,
+    "name": "golden_sword",
+    "displays": {
+      "en": "Golden Sword"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 32,
+      "material": "gold",
+      "damage": 4,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 28,
+    "name": "golden_shovel",
+    "displays": {
+      "en": "Golden Shovel"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 32,
+      "material": "gold",
+      "damage": 2,
+      "effectiveBlocks": [
+        2,
+        3,
+        12,
+        13,
+        60,
+        78,
+        80,
+        82,
+        88,
+        110
+      ]
+    }
+  },
+  {
+    "id": 29,
+    "name": "golden_pickaxe",
+    "displays": {
+      "en": "Golden Pickaxe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 32,
+      "material": "gold",
+      "damage": 2,
+      "effectiveBlocks": [
+        1,
+        4,
+        14,
+        15,
+        16,
+        21,
+        22,
+        24,
+        27,
+        28,
+        41,
+        42,
+        43,
+        44,
+        45,
+        48,
+        56,
+        57,
+        66,
+        73,
+        74,
+        79,
+        87,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132
+      ]
+    }
+  },
+  {
+    "id": 30,
+    "name": "golden_axe",
+    "displays": {
+      "en": "Golden Axe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 32,
+      "material": "gold",
+      "damage": 3,
+      "effectiveBlocks": [
+        5,
+        17,
+        47,
+        54,
+        86,
+        91,
+        127,
+        128,
+        154,
+        155
+      ]
+    }
+  },
+  {
+    "id": 31,
+    "name": "string",
+    "displays": {
+      "en": "String"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 32,
+    "name": "feather",
+    "displays": {
+      "en": "Feather"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 33,
+    "name": "gunpowder",
+    "displays": {
+      "en": "Gunpowder"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 34,
+    "name": "wooden_hoe",
+    "displays": {
+      "en": "Wooden Hoe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 59,
+      "material": "wood",
+      "damage": 1,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 35,
+    "name": "stone_hoe",
+    "displays": {
+      "en": "Stone Hoe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 131,
+      "material": "stone",
+      "damage": 1,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 36,
+    "name": "iron_hoe",
+    "displays": {
+      "en": "Iron Hoe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 250,
+      "material": "iron",
+      "damage": 1,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 37,
+    "name": "diamond_hoe",
+    "displays": {
+      "en": "Diamond Hoe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 1561,
+      "material": "diamond",
+      "damage": 1,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 38,
+    "name": "golden_hoe",
+    "displays": {
+      "en": "Golden Hoe"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 32,
+      "material": "gold",
+      "damage": 1,
+      "effectiveBlocks": []
+    }
+  },
+  {
+    "id": 39,
+    "name": "seeds",
+    "displays": {
+      "en": "Seeds"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 40,
+    "name": "wheat",
+    "displays": {
+      "en": "Wheat"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 41,
+    "name": "bread",
+    "displays": {
+      "en": "Bread"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 5,
+      "saturation": 0.6
+    }
+  },
+  {
+    "id": 42,
+    "name": "leather_helmet",
+    "displays": {
+      "en": "Leather Cap"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "leather",
+      "durability": 55
+    }
+  },
+  {
+    "id": 43,
+    "name": "leather_chestplate",
+    "displays": {
+      "en": "Leather Tunic"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "leather",
+      "durability": 80
+    }
+  },
+  {
+    "id": 44,
+    "name": "leather_leggings",
+    "displays": {
+      "en": "Leather Pants"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "leather",
+      "durability": 75
+    }
+  },
+  {
+    "id": 45,
+    "name": "leather_boots",
+    "displays": {
+      "en": "Leather Boots"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "leather",
+      "durability": 65
+    }
+  },
+  {
+    "id": 46,
+    "name": "chain_helmet",
+    "displays": {
+      "en": "Chain Helmet"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "chain",
+      "durability": 165
+    }
+  },
+  {
+    "id": 47,
+    "name": "chain_chestplate",
+    "displays": {
+      "en": "Chain Chestplate"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "chain",
+      "durability": 240
+    }
+  },
+  {
+    "id": 48,
+    "name": "chain_leggings",
+    "displays": {
+      "en": "Chain Leggings"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "chain",
+      "durability": 225
+    }
+  },
+  {
+    "id": 49,
+    "name": "chain_boots",
+    "displays": {
+      "en": "Chain Boots"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "chain",
+      "durability": 195
+    }
+  },
+  {
+    "id": 50,
+    "name": "iron_helmet",
+    "displays": {
+      "en": "Iron Helmet"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "iron",
+      "durability": 165
+    }
+  },
+  {
+    "id": 51,
+    "name": "iron_chestplate",
+    "displays": {
+      "en": "Iron Chestplate"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "iron",
+      "durability": 240
+    }
+  },
+  {
+    "id": 52,
+    "name": "iron_leggings",
+    "displays": {
+      "en": "Iron Leggings"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "iron",
+      "durability": 225
+    }
+  },
+  {
+    "id": 53,
+    "name": "iron_boots",
+    "displays": {
+      "en": "Iron Boots"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "iron",
+      "durability": 195
+    }
+  },
+  {
+    "id": 54,
+    "name": "diamond_helmet",
+    "displays": {
+      "en": "Diamond Helmet"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "diamond",
+      "durability": 363
+    }
+  },
+  {
+    "id": 55,
+    "name": "diamond_chestplate",
+    "displays": {
+      "en": "Diamond Chestplate"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "diamond",
+      "durability": 528
+    }
+  },
+  {
+    "id": 56,
+    "name": "diamond_leggings",
+    "displays": {
+      "en": "Diamond Leggings"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "diamond",
+      "durability": 495
+    }
+  },
+  {
+    "id": 57,
+    "name": "diamond_boots",
+    "displays": {
+      "en": "Diamond Boots"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "diamond",
+      "durability": 429
+    }
+  },
+  {
+    "id": 58,
+    "name": "golden_helmet",
+    "displays": {
+      "en": "Golden Helmet"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "gold",
+      "durability": 77
+    }
+  },
+  {
+    "id": 59,
+    "name": "golden_chestplate",
+    "displays": {
+      "en": "Golden Chestplate"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "gold",
+      "durability": 112
+    }
+  },
+  {
+    "id": 60,
+    "name": "golden_leggings",
+    "displays": {
+      "en": "Golden Leggings"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "gold",
+      "durability": 105
+    }
+  },
+  {
+    "id": 61,
+    "name": "golden_boots",
+    "displays": {
+      "en": "Golden Boots"
+    },
+    "maxStackSize": 1,
+    "armor": {
+      "material": "gold",
+      "durability": 91
+    }
+  },
+  {
+    "id": 62,
+    "name": "flint",
+    "displays": {
+      "en": "Flint"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 63,
+    "name": "porkchop",
+    "displays": {
+      "en": "Raw Porkchop"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 3,
+      "saturation": 0.3
+    }
+  },
+  {
+    "id": 64,
+    "name": "cooked_porkchop",
+    "displays": {
+      "en": "Cooked Porkchop"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 8,
+      "saturation": 0.8
+    }
+  },
+  {
+    "id": 65,
+    "name": "painting",
+    "displays": {
+      "en": "Painting"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 66,
+    "name": "golden_apple",
+    "displays": {
+      "en": "Golden Apple"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 10,
+      "saturation": 1.2
+    }
+  },
+  {
+    "id": 67,
+    "name": "sign",
+    "displays": {
+      "en": "Sign"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 68,
+    "name": "wooden_door",
+    "displays": {
+      "en": "Wooden Door"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 69,
+    "name": "bucket",
+    "displays": {
+      "en": "Bucket"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 70,
+    "name": "water_bucket",
+    "displays": {
+      "en": "Water Bucket"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 71,
+    "name": "lava_bucket",
+    "displays": {
+      "en": "Lava Bucket"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 72,
+    "name": "minecart",
+    "displays": {
+      "en": "Minecart"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 73,
+    "name": "saddle",
+    "displays": {
+      "en": "Saddle"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 74,
+    "name": "iron_door",
+    "displays": {
+      "en": "Iron Door"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 75,
+    "name": "redstone",
+    "displays": {
+      "en": "Redstone"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 76,
+    "name": "snowball",
+    "displays": {
+      "en": "Snowball"
+    },
+    "maxStackSize": 16
+  },
+  {
+    "id": 77,
+    "name": "boat",
+    "displays": {
+      "en": "Boat"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 78,
+    "name": "leather",
+    "displays": {
+      "en": "Leather"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 79,
+    "name": "milk_bucket",
+    "displays": {
+      "en": "Milk"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 80,
+    "name": "brick",
+    "displays": {
+      "en": "Brick"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 81,
+    "name": "clay_ball",
+    "displays": {
+      "en": "Clay"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 82,
+    "name": "reeds",
+    "displays": {
+      "en": "Sugar Canes"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 83,
+    "name": "paper",
+    "displays": {
+      "en": "Paper"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 84,
+    "name": "book",
+    "displays": {
+      "en": "Book"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 85,
+    "name": "slime_ball",
+    "displays": {
+      "en": "Slimeball"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 86,
+    "name": "minecart_chest",
+    "displays": {
+      "en": "Minecart with Chest"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 87,
+    "name": "minecart_furnace",
+    "displays": {
+      "en": "Minecart with Furnace"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 88,
+    "name": "egg",
+    "displays": {
+      "en": "Egg"
+    },
+    "maxStackSize": 16
+  },
+  {
+    "id": 89,
+    "name": "compass",
+    "displays": {
+      "en": "Compass"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 90,
+    "name": "fishing_rod",
+    "displays": {
+      "en": "Fishing Rod"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 64
+    }
+  },
+  {
+    "id": 91,
+    "name": "clock",
+    "displays": {
+      "en": "Clock"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 92,
+    "name": "glowstone_dust",
+    "displays": {
+      "en": "Glowstone Dust"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 93,
+    "name": "fish",
+    "displays": {
+      "en": "Raw Fish"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 2,
+      "saturation": 0.3
+    }
+  },
+  {
+    "id": 94,
+    "name": "cooked_fish",
+    "displays": {
+      "en": "Cooked Fish"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 5,
+      "saturation": 0.6
+    }
+  },
+  {
+    "id": 95,
+    "name": "black_dye",
+    "displays": {
+      "en": "Ink Sac"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 96,
+    "name": "bone",
+    "displays": {
+      "en": "Bone"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 97,
+    "name": "sugar",
+    "displays": {
+      "en": "Sugar"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 98,
+    "name": "cake",
+    "displays": {
+      "en": "Cake"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 99,
+    "name": "bed",
+    "displays": {
+      "en": "Bed"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 100,
+    "name": "repeater",
+    "displays": {
+      "en": "Redstone Repeater"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 101,
+    "name": "cookie",
+    "displays": {
+      "en": "Cookie"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 1,
+      "saturation": 0.1
+    }
+  },
+  {
+    "id": 102,
+    "name": "map",
+    "displays": {
+      "en": "Empty Map"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 103,
+    "name": "shears",
+    "displays": {
+      "en": "Shears"
+    },
+    "maxStackSize": 1,
+    "tool": {
+      "usage": 238
+    }
+  },
+  {
+    "id": 104,
+    "name": "melon",
+    "displays": {
+      "en": "Melon"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 2,
+      "saturation": 0.3
+    }
+  },
+  {
+    "id": 105,
+    "name": "pumpkin_seeds",
+    "displays": {
+      "en": "Pumpkin Seeds"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 106,
+    "name": "melon_seeds",
+    "displays": {
+      "en": "Melon Seeds"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 107,
+    "name": "raw_beef",
+    "displays": {
+      "en": "Raw Beef"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 3,
+      "saturation": 0.3
+    }
+  },
+  {
+    "id": 108,
+    "name": "cooked_beef",
+    "displays": {
+      "en": "Steak"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 8,
+      "saturation": 0.8
+    }
+  },
+  {
+    "id": 109,
+    "name": "raw_chicken",
+    "displays": {
+      "en": "Raw Chicken"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 2,
+      "saturation": 0.3
+    }
+  },
+  {
+    "id": 110,
+    "name": "cooked_chicken",
+    "displays": {
+      "en": "Cooked Chicken"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 6,
+      "saturation": 0.6
+    }
+  },
+  {
+    "id": 111,
+    "name": "rotten_flesh",
+    "displays": {
+      "en": "Rotten Flesh"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 4,
+      "saturation": 0.1
+    }
+  },
+  {
+    "id": 112,
+    "name": "ender_pearl",
+    "displays": {
+      "en": "Ender Pearl"
+    },
+    "maxStackSize": 16
+  },
+  {
+    "id": 113,
+    "name": "blaze_rod",
+    "displays": {
+      "en": "Blaze Rod"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 114,
+    "name": "ghast_tear",
+    "displays": {
+      "en": "Ghast Tear"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 115,
+    "name": "gold_nugget",
+    "displays": {
+      "en": "Gold Nugget"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 116,
+    "name": "nether_wart",
+    "displays": {
+      "en": "Nether Wart"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 117,
+    "name": "potion",
+    "displays": {
+      "en": "Potion"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 118,
+    "name": "glass_bottle",
+    "displays": {
+      "en": "Glass Bottle"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 119,
+    "name": "spider_eye",
+    "displays": {
+      "en": "Spider Eye"
+    },
+    "maxStackSize": 64,
+    "food": {
+      "amount": 2,
+      "saturation": 0.8
+    }
+  },
+  {
+    "id": 120,
+    "name": "fermented_spider_eye",
+    "displays": {
+      "en": "Fermented Spider Eye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 121,
+    "name": "blaze_powder",
+    "displays": {
+      "en": "Blaze Powder"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 122,
+    "name": "magma_cream",
+    "displays": {
+      "en": "Magma Cream"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 123,
+    "name": "brewing_stand",
+    "displays": {
+      "en": "Brewing Stand"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 124,
+    "name": "cauldron",
+    "displays": {
+      "en": "Cauldron"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 125,
+    "name": "eye_of_ender",
+    "displays": {
+      "en": "Eye of Ender"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 126,
+    "name": "glistering_melon",
+    "displays": {
+      "en": "Glistering Melon"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 127,
+    "name": "record_13",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 128,
+    "name": "record_cat",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 129,
+    "name": "record_blocks",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 130,
+    "name": "record_chirp",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 131,
+    "name": "record_far",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 132,
+    "name": "record_mall",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 133,
+    "name": "record_mellohi",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 134,
+    "name": "record_stal",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 135,
+    "name": "record_strad",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 136,
+    "name": "record_ward",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 137,
+    "name": "record_11",
+    "displays": {
+      "en": "Music Disc"
+    },
+    "maxStackSize": 1
+  },
+  {
+    "id": 138,
+    "name": "charcoal",
+    "displays": {
+      "en": "Charcoal"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 139,
+    "name": "red_dye",
+    "displays": {
+      "en": "Rose Red"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 140,
+    "name": "green_dye",
+    "displays": {
+      "en": "Cactus Green"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 141,
+    "name": "brown_dye",
+    "displays": {
+      "en": "Cocoa Beans"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 142,
+    "name": "lapis_lazuli",
+    "displays": {
+      "en": "Lapis Lazuli"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 143,
+    "name": "purple_dye",
+    "displays": {
+      "en": "Purple Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 144,
+    "name": "cyan_dye",
+    "displays": {
+      "en": "Cyan Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 145,
+    "name": "light_gray_dye",
+    "displays": {
+      "en": "Light Gray Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 146,
+    "name": "gray_dye",
+    "displays": {
+      "en": "Gray Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 147,
+    "name": "pink_dye",
+    "displays": {
+      "en": "Pink Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 148,
+    "name": "lime_dye",
+    "displays": {
+      "en": "Lime Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 149,
+    "name": "yellow_dye",
+    "displays": {
+      "en": "Dandelion Yellow"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 150,
+    "name": "light_blue_dye",
+    "displays": {
+      "en": "Light Blue Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 151,
+    "name": "magenta_dye",
+    "displays": {
+      "en": "Magenta Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 152,
+    "name": "orange_dye",
+    "displays": {
+      "en": "Orange Dye"
+    },
+    "maxStackSize": 64
+  },
+  {
+    "id": 153,
+    "name": "bone_meal",
+    "displays": {
+      "en": "Bone Meal"
+    },
+    "maxStackSize": 64
+  }
+]

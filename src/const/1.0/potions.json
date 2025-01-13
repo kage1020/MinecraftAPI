@@ -1,0 +1,318 @@
+[
+  {
+    "id": 1,
+    "name": "awkward",
+    "displays": {
+      "en": {
+        "name": "Awkward Potion",
+        "effect": "No effects"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": false,
+    "upgradable": false
+  },
+  {
+    "id": 2,
+    "name": "mundane",
+    "displays": {
+      "en": {
+        "name": "Mundane Potion",
+        "effect": "No effects"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 75,
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "id": 97,
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "id": 114,
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "id": 119,
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "id": 121,
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "id": 122,
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "id": 126,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": false,
+    "upgradable": false
+  },
+  {
+    "id": 3,
+    "name": "thick",
+    "displays": {
+      "en": {
+        "name": "Thick Potion",
+        "effect": "No effects"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 92,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": false,
+    "upgradable": false
+  },
+  {
+    "id": 4,
+    "name": "weakness",
+    "displays": {
+      "en": {
+        "name": "Potion of Weakness",
+        "effect": "Weakness"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 120,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": false
+  },
+  {
+    "id": 5,
+    "name": "poison",
+    "displays": {
+      "en": {
+        "name": "Potion of Poison",
+        "effect": "Poison"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 119,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": true
+  },
+  {
+    "id": 6,
+    "name": "harm",
+    "displays": {
+      "en": {
+        "name": "Potion of Harming",
+        "effect": "Instant Damage"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 119,
+          "amount": 1
+        },
+        {
+          "id": 120,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": false,
+    "upgradable": true
+  },
+  {
+    "id": 7,
+    "name": "move_speed",
+    "displays": {
+      "en": {
+        "name": "Potion of Swiftness",
+        "effect": "Speed"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 97,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": true
+  },
+  {
+    "id": 8,
+    "name": "move_slowdown",
+    "displays": {
+      "en": {
+        "name": "Potion of Slowness",
+        "effect": "Slowness"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 97,
+          "amount": 1
+        },
+        {
+          "id": 120,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": false
+  },
+  {
+    "id": 9,
+    "name": "regeneration",
+    "displays": {
+      "en": {
+        "name": "Potion of Regeneration",
+        "effect": "Regeneration"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 114,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": true
+  },
+  {
+    "id": 10,
+    "name": "damage_boost",
+    "displays": {
+      "en": {
+        "name": "Potion of Strength",
+        "effect": "Strength"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 121,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": true
+  },
+  {
+    "id": 11,
+    "name": "heal",
+    "displays": {
+      "en": {
+        "name": "Potion of Healing",
+        "effect": "Instant Health"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 126,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": false,
+    "upgradable": true
+  },
+  {
+    "id": 12,
+    "name": "fire_resistance",
+    "displays": {
+      "en": {
+        "name": "Potion of Fire Resistance",
+        "effect": "Fire Resistance"
+      }
+    },
+    "ingredients": [
+      [
+        {
+          "id": 116,
+          "amount": 1
+        },
+        {
+          "id": 122,
+          "amount": 1
+        }
+      ]
+    ],
+    "extendable": true,
+    "upgradable": false
+  }
+]
