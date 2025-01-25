@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import versions from '../const/version.json';
+import dataVersions from '../const/data-version.json';
 import v1 from './1.0';
 
 const app = new Hono();
@@ -16,6 +17,10 @@ app.get('/version', (c) => {
 
 app.get('/snapshot', (c) => {
   return c.json({ snapshots: versions.snapshot });
+});
+
+app.get('/data-version', (c) => {
+  return c.json({ dataVersions });
 });
 
 export default app;
