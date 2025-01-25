@@ -8,11 +8,11 @@ const app = new Hono();
 app.route('/1.0', v1);
 
 app.get('/', (c) => {
-  return c.json({ routes: versions.major });
+  return c.json({ routes: [...versions.major, 'version', 'snapshot', 'data-version'] });
 });
 
 app.get('/version', (c) => {
-  return c.json({ versions });
+  return c.json({ versions: versions.major });
 });
 
 app.get('/snapshot', (c) => {

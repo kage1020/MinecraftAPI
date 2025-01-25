@@ -4,6 +4,8 @@ compatibility_date = "2025-01-03"
 
 # compatibility_flags = [ "nodejs_compat" ]
 
+routes = [{ pattern = "minecraft.api.geak.dev", custom_domain = true }]
+
 # [vars]
 # MY_VAR = "my-variable"
 
