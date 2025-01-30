@@ -4,7 +4,7 @@ import biomes from '../../const/1.0/biomes.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: biomes.map((b) => b.name) });
+  return c.json(biomes);
 });
 
 app.get('/:biome', (c) => {

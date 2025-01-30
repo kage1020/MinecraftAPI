@@ -4,7 +4,7 @@ import deaths from '../../const/1.0/deaths.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: deaths.map((b) => b.name) });
+  return c.json(deaths);
 });
 
 app.get('/:death', (c) => {

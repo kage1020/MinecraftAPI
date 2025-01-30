@@ -4,7 +4,7 @@ import colors from '../../const/1.0/colors.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: colors.map((b) => b.name) });
+  return c.json(colors);
 });
 
 app.get('/:color', (c) => {

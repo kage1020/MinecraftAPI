@@ -4,7 +4,7 @@ import blocks from '../../const/1.0/blocks.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: blocks.map((b) => b.name) });
+  return c.json(blocks);
 });
 
 app.get('/:block', (c) => {

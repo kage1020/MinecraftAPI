@@ -4,7 +4,7 @@ import armorMaterial from '../../const/1.0/armor-materials.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: armorMaterial.map((b) => b.name) });
+  return c.json(armorMaterial);
 });
 
 app.get('/:material', (c) => {

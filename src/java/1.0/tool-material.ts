@@ -4,7 +4,7 @@ import toolMaterial from '../../const/1.0/tool-materials.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: toolMaterial.map((b) => b.name) });
+  return c.json(toolMaterial);
 });
 
 app.get('/:material', (c) => {

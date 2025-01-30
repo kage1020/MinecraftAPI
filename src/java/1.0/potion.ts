@@ -4,7 +4,7 @@ import potions from '../../const/1.0/potions.json';
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.json({ routes: potions.map((b) => b.name) });
+  return c.json(potions);
 });
 
 app.get('/:potion', (c) => {
