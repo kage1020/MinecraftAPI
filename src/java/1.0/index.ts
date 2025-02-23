@@ -5,6 +5,7 @@ import block from './block';
 import calc from './calc';
 import color from './color';
 import death from './death';
+import item from './item';
 import potion from './potion';
 import toolMaterial from './tool-material';
 
@@ -16,6 +17,7 @@ app.route('/block', block);
 app.route('/calc', calc);
 app.route('/color', color);
 app.route('/death', death);
+app.route('/item', item);
 app.route('/potion', potion);
 app.route('/tool-material', toolMaterial);
 

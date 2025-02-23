@@ -1,4 +1,4 @@
-interface ArmorMaterial {
+export interface ArmorMaterial {
   id: number;
   name: string;
   maxDamageFactor: number;
@@ -6,7 +6,7 @@ interface ArmorMaterial {
   enchantability: number;
 }
 
-interface Biome {
+export interface Biome {
   id: number;
   name: string;
   displays: {
@@ -20,7 +20,7 @@ interface Biome {
   downfall: number;
 }
 
-interface Block {
+export interface Block {
   id: number;
   name: string;
   displays?: {
@@ -38,19 +38,25 @@ interface Block {
   }[];
 }
 
-interface Color {
+export interface Color {
   id: number;
   name: string;
   hex: string;
 }
 
-interface Death {
+export interface DataVersion {
+  client: string;
+  protocol: number;
+  data: number | null;
+}
+
+export interface Death {
   id: number;
   name: string;
   description: string;
 }
 
-interface Item {
+export interface Item {
   id: number;
   name: string;
   displays?: {
@@ -74,7 +80,7 @@ interface Item {
   };
 }
 
-interface Potion {
+export interface Potion {
   id: number;
   name: string;
   displays: {
@@ -91,7 +97,7 @@ interface Potion {
   upgradeable: boolean;
 }
 
-interface ToolMaterial {
+export interface ToolMaterial {
   id: number;
   name: string;
   harvestLevel: number;
@@ -101,7 +107,7 @@ interface ToolMaterial {
   enchantability: number;
 }
 
-interface Version {
+export interface Version {
   id: string;
   minimumLauncherVersion: number;
   releaseTime: string;

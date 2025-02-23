@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { GrassColorBuffer } from '../../const/1.0/grass';
+import { GrassColorBuffer } from '@/const/1.0/grass';
 
 const app = new Hono();
 

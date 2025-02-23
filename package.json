@@ -2,13 +2,15 @@
   "name": "minecraft-api",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "test": "vitest run"
   },
   "dependencies": {
     "hono": "^4.6.15"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
-    "wrangler": "^3.96.0"
+    "vitest": "^3.0.6",
+    "wrangler": "^3.109.2"
   }
 }

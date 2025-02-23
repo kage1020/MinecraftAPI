@@ -1,0 +1,66 @@
+import { Hono } from 'hono';
+import advancement from './advancement';
+import atlas from './atlas';
+import bannerPattern from './banner-pattern';
+import blockState from './blockstate';
+import chatType from './chat-type';
+import damageType from './damage-type';
+import datapack from './datapack';
+import dimensionType from './dimension-type';
+import enchantment from './enchantment';
+import enchantmentProvider from './enchantment-provider';
+import equipment from './equipment';
+import instrument from './instrument';
+import item from './item';
+import jukeboxSong from './jukebox-song';
+import lang from './lang';
+import lootTable from './loot-table';
+import model from './model';
+import paintingVariant from './painting-variant';
+import particle from './particle';
+import postEffect from './post-effect';
+import recipe from './recipe';
+import tag from './tag';
+import text from './text';
+import trialSpawner from './trial-spawner';
+import trimMaterial from './trim-material';
+import trimPattern from './trim-pattern';
+import wolfVariant from './wolf-variant';
+import worldGen from './worldgen';
+
+const app = new Hono();
+
+app.route('/advancement', advancement);
+app.route('/atlas', atlas);
+app.route('/banner-pattern', bannerPattern);
+app.route('/blockstate', blockState);
+app.route('/chat-type', chatType);
+app.route('/damage-type', damageType);
+app.route('/datapack', datapack);
+app.route('/dimension-type', dimensionType);
+app.route('/enchantment', enchantment);
+app.route('/enchantment-provider', enchantmentProvider);
+app.route('/equipment', equipment);
+app.route('/instrument', instrument);
+app.route('/item', item);
+app.route('/jukebox-song', jukeboxSong);
+app.route('/lang', lang);
+app.route('/loot-table', lootTable);
+app.route('/model', model);
+app.route('/painting-variant', paintingVariant);
+app.route('/particle', particle);
+app.route('/post-effect', postEffect);
+app.route('/recipe', recipe);
+app.route('/tag', tag);
+app.route('/text', text);
+app.route('/trial-spawner', trialSpawner);
+app.route('/trim-material', trimMaterial);
+app.route('/trim-pattern', trimPattern);
+app.route('/wolf-variant', wolfVariant);
+app.route('/worldgen', worldGen);
+
+app.get('/', async (c) => {
+  return c.json({ routes: Object.values(app.routes) });
+});
+
+export default app;
