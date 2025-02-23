@@ -1,3 +1,25 @@
+interface ArmorMaterial {
+  id: number;
+  name: string;
+  maxDamageFactor: number;
+  damageReductionAmount: number[];
+  enchantability: number;
+}
+
+interface Biome {
+  id: number;
+  name: string;
+  displays: {
+    en: string;
+  };
+  colors: {
+    map: string;
+    grass: string;
+  };
+  temperature: number;
+  downfall: number;
+}
+
 interface Block {
   id: number;
   name: string;
@@ -14,6 +36,18 @@ interface Block {
     probability?: number;
     condition?: 'fully_grown';
   }[];
+}
+
+interface Color {
+  id: number;
+  name: string;
+  hex: string;
+}
+
+interface Death {
+  id: number;
+  name: string;
+  description: string;
 }
 
 interface Item {
@@ -40,30 +74,6 @@ interface Item {
   };
 }
 
-interface Biome {
-  id: number;
-  name: string;
-  displays: {
-    en: string;
-  };
-  colors: {
-    map: string;
-    grass: string;
-  };
-  temperature: number;
-  downfall: number;
-}
-
-interface ToolMaterial {
-  id: number;
-  name: string;
-  harvestLevel: number;
-  maxUses: number;
-  efficiency: number;
-  damage: number;
-  enchantability: number;
-}
-
 interface Potion {
   id: number;
   name: string;
@@ -81,16 +91,19 @@ interface Potion {
   upgradeable: boolean;
 }
 
-interface Color {
+interface ToolMaterial {
   id: number;
   name: string;
-  hex: string;
+  harvestLevel: number;
+  maxUses: number;
+  efficiency: number;
+  damage: number;
+  enchantability: number;
 }
 
-interface ArmorMaterial {
-  id: number;
-  name: string;
-  maxDamageFactor: number;
-  damageReductionAmount: number[];
-  enchantability: number;
+interface Version {
+  id: string;
+  minimumLauncherVersion: number;
+  releaseTime: string;
+  type: string;
 }
