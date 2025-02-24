@@ -60,7 +60,7 @@ app.route('/wolf-variant', wolfVariant);
 app.route('/worldgen', worldGen);
 
 app.get('/', async (c) => {
-  return c.json({ routes: Object.values(app.routes) });
+  return c.json({ routes: Object.values(app.routes).map((route) => route.path) });
 });
 
 export default app;

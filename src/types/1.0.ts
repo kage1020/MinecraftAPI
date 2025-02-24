@@ -1,3 +1,22 @@
+export interface Achievement {
+  parent?: string;
+  criteria: {
+    [key: string]: {
+      trigger: string;
+      conditions?: Record<string, any>;
+    };
+  };
+  requirements: string[][];
+  display: {
+    description: {
+      translate: string;
+    };
+    title: {
+      translate: string;
+    };
+  };
+}
+
 export interface ArmorMaterial {
   id: number;
   name: string;

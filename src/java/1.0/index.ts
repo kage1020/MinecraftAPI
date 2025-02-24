@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import achievement from './achievement';
 import armorMaterial from './armor-material';
 import biome from './biome';
 import block from './block';
@@ -11,6 +12,7 @@ import toolMaterial from './tool-material';
 
 const app = new Hono();
 
+app.route('/achievement', achievement);
 app.route('/armor-material', armorMaterial);
 app.route('/biome', biome);
 app.route('/block', block);
@@ -23,7 +25,7 @@ app.route('/tool-material', toolMaterial);
 
 app.get('/', (c) => {
   return c.json({
-    routes: ['armor-material', 'biome', 'block', 'calc', 'color', 'potion', 'tool-material'],
+    routes: Object.values(app.routes).map((route) => route.path),
   });
 });
 
