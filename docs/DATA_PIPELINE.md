@@ -2,15 +2,18 @@
 
 ## 1. 概要
 
-Minecraft Web APIで提供するデータは、Minecraft公式クライアントJARファイルから抽出し、API用のJSON形式に変換して使用する。
+Minecraft Web APIで提供するデータは、Minecraft公式クライアント/サーバーJARファイルから抽出し、API用のJSON形式に変換して使用する。
 
 ### 1.1 データソース
 
-| ソース | 内容 | 用途 |
-|--------|------|------|
-| Minecraft JAR | アセット、データ | 主要データソース |
-| Version Manifest | バージョン情報 | バージョン管理 |
-| minecraft-data | 補完データ | 不足データの補完 |
+すべてのデータをMinecraft公式JARファイルから抽出します。
+
+| ソース | 内容 | 抽出方法 |
+|--------|------|---------|
+| Client JAR | アセット（テクスチャ、モデル、サウンド、言語） | ZIP解凍 |
+| Client JAR | レシピ、ルートテーブル、タグ、進捗 | ZIP解凍 |
+| Server JAR | レジストリダンプ（ブロック、アイテム、エンティティ等） | `--reports` オプション |
+| Version Manifest | バージョン情報、ダウンロードURL | Mojang API |
 
 ### 1.2 処理フロー概要
 
@@ -21,31 +24,53 @@ Minecraft Web APIで提供するデータは、Minecraft公式クライアント
 └────────┬────────┘
          │
          ▼
-┌─────────────────┐     ┌─────────────────┐
-│ Download JAR    │────▶│ Extract Assets  │
-│ (per version)   │     │ & Data          │
-└─────────────────┘     └────────┬────────┘
-                                 │
-                    ┌────────────┼────────────┐
-                    ▼            ▼            ▼
-              ┌──────────┐ ┌──────────┐ ┌──────────┐
-              │ Process  │ │ Process  │ │ Process  │
-              │ Items    │ │ Blocks   │ │ Entities │
-              └────┬─────┘ └────┬─────┘ └────┬─────┘
-                   │            │            │
-                   └────────────┼────────────┘
-                                ▼
-                        ┌──────────────┐
-                        │ Merge &      │
-                        │ Normalize    │
-                        └──────┬───────┘
-                               │
-                    ┌──────────┼──────────┐
-                    ▼          ▼          ▼
-              ┌──────────┐ ┌────────┐ ┌────────┐
-              │ Upload   │ │ Upload │ │ Upload │
-              │ to KV    │ │ to R2  │ │ Types  │
-              └──────────┘ └────────┘ └────────┘
+┌─────────────────────────────────────────────────────┐
+│              Download JARs (per version)            │
+│  • Client JAR (アセット、データパック)              │
+│  • Server JAR (レジストリダンプ生成用)              │
+└────────┬────────────────────────────┬───────────────┘
+         │                            │
+         ▼                            ▼
+┌─────────────────┐      ┌─────────────────────────────┐
+│ Extract Client  │      │ Generate Server Reports     │
+│ JAR Contents    │      │ java -jar server.jar        │
+│ (ZIP解凍)       │      │   --reports                 │
+└────────┬────────┘      └─────────────┬───────────────┘
+         │                             │
+         │    ┌────────────────────────┘
+         │    │
+         ▼    ▼
+┌─────────────────────────────────────────────────────┐
+│              Data Processing                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │ Items    │ │ Blocks   │ │ Entities │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │ Recipes  │ │ Loot     │ │ Tags     │            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+└────────┬────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│              Merge & Normalize                      │
+│  • 関連データの紐付け                               │
+│  • ID正規化                                         │
+│  • 言語データ統合                                   │
+└────────┬────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│              Validation                             │
+│  • スキーマ検証                                     │
+│  • 参照整合性チェック                               │
+└────────┬────────────────────────────────────────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌────────┐
+│ KV     │ │ R2     │
+│(データ)│ │(アセット)│
+└────────┘ └────────┘
 ```
 
 ---
@@ -110,181 +135,341 @@ interface VersionDetail {
 
 ---
 
-## 3. JAR抽出処理
+## 3. JAR ダウンロード
 
-### 3.1 JARファイル構造
-
-```
-minecraft-{version}.jar
-├── assets/
-│   └── minecraft/
-│       ├── textures/
-│       │   ├── block/
-│       │   ├── item/
-│       │   ├── entity/
-│       │   ├── gui/
-│       │   └── particle/
-│       ├── models/
-│       │   ├── block/
-│       │   └── item/
-│       ├── sounds/
-│       ├── lang/
-│       │   ├── en_us.json
-│       │   └── ja_jp.json
-│       └── blockstates/
-│
-├── data/
-│   └── minecraft/
-│       ├── recipes/
-│       ├── loot_tables/
-│       │   ├── blocks/
-│       │   ├── entities/
-│       │   └── chests/
-│       ├── tags/
-│       │   ├── blocks/
-│       │   ├── items/
-│       │   └── entity_types/
-│       ├── advancements/
-│       └── worldgen/
-│           └── biome/
-│
-└── META-INF/
-```
-
-### 3.2 抽出スクリプト
+### 3.1 ダウンロードスクリプト
 
 ```typescript
-// scripts/extract-data.ts
+// scripts/download-jars.ts
+import * as fs from 'fs/promises'
+import * as path from 'path'
+import { createHash } from 'crypto'
+
+interface DownloadConfig {
+  version: string
+  outputDir: string
+}
+
+const MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
+
+export async function downloadJars(config: DownloadConfig) {
+  const { version, outputDir } = config
+
+  // バージョン情報取得
+  const manifest = await fetch(MANIFEST_URL).then(r => r.json())
+  const versionEntry = manifest.versions.find((v: any) => v.id === version)
+
+  if (!versionEntry) {
+    throw new Error(`Version not found: ${version}`)
+  }
+
+  const versionDetail = await fetch(versionEntry.url).then(r => r.json())
+
+  // ディレクトリ作成
+  const versionDir = path.join(outputDir, version)
+  await fs.mkdir(versionDir, { recursive: true })
+
+  // Client JAR ダウンロード
+  const clientPath = path.join(versionDir, 'client.jar')
+  await downloadWithVerification(
+    versionDetail.downloads.client.url,
+    clientPath,
+    versionDetail.downloads.client.sha1
+  )
+  console.log(`Downloaded client.jar for ${version}`)
+
+  // Server JAR ダウンロード
+  const serverPath = path.join(versionDir, 'server.jar')
+  await downloadWithVerification(
+    versionDetail.downloads.server.url,
+    serverPath,
+    versionDetail.downloads.server.sha1
+  )
+  console.log(`Downloaded server.jar for ${version}`)
+
+  return {
+    clientPath,
+    serverPath,
+    versionDetail,
+  }
+}
+
+async function downloadWithVerification(
+  url: string,
+  outputPath: string,
+  expectedSha1: string
+) {
+  const response = await fetch(url)
+  const buffer = Buffer.from(await response.arrayBuffer())
+
+  // SHA1検証
+  const hash = createHash('sha1').update(buffer).digest('hex')
+  if (hash !== expectedSha1) {
+    throw new Error(`SHA1 mismatch: expected ${expectedSha1}, got ${hash}`)
+  }
+
+  await fs.writeFile(outputPath, buffer)
+}
+```
+
+---
+
+## 4. サーバーレポート生成
+
+Minecraft 1.13以降では、サーバーJARに `--reports` オプションを付けて実行すると、詳細なレジストリダンプを生成できます。
+
+### 4.1 レポート生成スクリプト
+
+```typescript
+// scripts/generate-reports.ts
 import { execSync } from 'child_process'
+import * as fs from 'fs/promises'
+import * as path from 'path'
+
+interface ReportConfig {
+  version: string
+  serverJarPath: string
+  outputDir: string
+}
+
+export async function generateServerReports(config: ReportConfig) {
+  const { version, serverJarPath, outputDir } = config
+
+  const workDir = path.join(outputDir, version, 'reports')
+  await fs.mkdir(workDir, { recursive: true })
+
+  console.log(`Generating reports for ${version}...`)
+
+  // サーバーJARを実行してレポート生成
+  // EULAに同意していなくてもレポートは生成される
+  try {
+    execSync(`java -DbundlerMainClass=net.minecraft.data.Main -jar "${serverJarPath}" --reports --output "${workDir}"`, {
+      cwd: workDir,
+      stdio: 'pipe',
+      timeout: 60000,
+    })
+  } catch (error) {
+    // レポート生成後に終了コード0以外で終了することがあるが、
+    // レポートファイルが生成されていれば問題なし
+  }
+
+  // 生成されたファイル確認
+  const files = await fs.readdir(workDir, { recursive: true })
+  console.log(`Generated ${files.length} report files`)
+
+  return workDir
+}
+```
+
+### 4.2 生成されるレポートファイル
+
+```
+reports/
+├── blocks.json              # ブロック定義（状態含む）
+├── registries.json          # 全レジストリ一覧
+├── commands.json            # コマンド定義
+└── registries/
+    ├── block.json           # ブロックID一覧
+    ├── item.json            # アイテムID一覧
+    ├── entity_type.json     # エンティティID一覧
+    ├── enchantment.json     # エンチャントID一覧
+    ├── mob_effect.json      # ステータス効果ID一覧
+    ├── potion.json          # ポーションID一覧
+    ├── biome.json           # バイオームID一覧
+    └── ...
+```
+
+### 4.3 blocks.json の構造
+
+```json
+{
+  "minecraft:stone": {
+    "properties": {},
+    "states": [
+      {
+        "id": 1,
+        "default": true
+      }
+    ]
+  },
+  "minecraft:oak_log": {
+    "properties": {
+      "axis": ["x", "y", "z"]
+    },
+    "states": [
+      { "id": 100, "properties": { "axis": "x" } },
+      { "id": 101, "properties": { "axis": "y" }, "default": true },
+      { "id": 102, "properties": { "axis": "z" } }
+    ]
+  }
+}
+```
+
+---
+
+## 5. Client JAR 抽出
+
+### 5.1 抽出スクリプト
+
+```typescript
+// scripts/extract-client.ts
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import AdmZip from 'adm-zip'
 
 interface ExtractionConfig {
   version: string
-  jarPath: string
+  clientJarPath: string
   outputDir: string
 }
 
-export async function extractMinecraftData(config: ExtractionConfig) {
-  const { version, jarPath, outputDir } = config
+export async function extractClientJar(config: ExtractionConfig) {
+  const { version, clientJarPath, outputDir } = config
 
-  console.log(`Extracting data for version ${version}...`)
+  console.log(`Extracting client.jar for ${version}...`)
 
-  const zip = new AdmZip(jarPath)
+  const zip = new AdmZip(clientJarPath)
   const entries = zip.getEntries()
+
+  const extractDir = path.join(outputDir, version, 'extracted')
 
   // 抽出対象パターン
   const patterns = {
+    // アセット
     textures: /^assets\/minecraft\/textures\//,
     models: /^assets\/minecraft\/models\//,
     blockstates: /^assets\/minecraft\/blockstates\//,
-    lang: /^assets\/minecraft\/lang\//,
     sounds: /^assets\/minecraft\/sounds\//,
-    recipes: /^data\/minecraft\/recipes\//,
-    lootTables: /^data\/minecraft\/loot_tables\//,
+    lang: /^assets\/minecraft\/lang\//,
+
+    // データパック
+    recipes: /^data\/minecraft\/recipe\//,            // 1.21+
+    recipesLegacy: /^data\/minecraft\/recipes\//,     // 1.20以前
+    lootTables: /^data\/minecraft\/loot_table\//,     // 1.21+
+    lootTablesLegacy: /^data\/minecraft\/loot_tables\//, // 1.20以前
     tags: /^data\/minecraft\/tags\//,
-    advancements: /^data\/minecraft\/advancements\//,
+    advancements: /^data\/minecraft\/advancement\//,  // 1.21+
+    advancementsLegacy: /^data\/minecraft\/advancements\//, // 1.20以前
     worldgen: /^data\/minecraft\/worldgen\//,
   }
+
+  let extractedCount = 0
 
   for (const entry of entries) {
     if (entry.isDirectory) continue
 
-    for (const [category, pattern] of Object.entries(patterns)) {
+    let matched = false
+    for (const pattern of Object.values(patterns)) {
       if (pattern.test(entry.entryName)) {
-        const relativePath = entry.entryName
-        const outputPath = path.join(outputDir, version, relativePath)
-
-        await fs.mkdir(path.dirname(outputPath), { recursive: true })
-        await fs.writeFile(outputPath, entry.getData())
-
+        matched = true
         break
       }
     }
+
+    if (matched) {
+      const outputPath = path.join(extractDir, entry.entryName)
+      await fs.mkdir(path.dirname(outputPath), { recursive: true })
+      await fs.writeFile(outputPath, entry.getData())
+      extractedCount++
+    }
   }
 
-  console.log(`Extraction complete for version ${version}`)
+  console.log(`Extracted ${extractedCount} files`)
+  return extractDir
 }
+```
+
+### 5.2 Client JAR の構造
+
+```
+client.jar
+├── assets/
+│   └── minecraft/
+│       ├── textures/
+│       │   ├── block/          # ブロックテクスチャ
+│       │   ├── item/           # アイテムテクスチャ
+│       │   ├── entity/         # エンティティテクスチャ
+│       │   ├── gui/            # GUIテクスチャ
+│       │   └── particle/       # パーティクル
+│       ├── models/
+│       │   ├── block/          # ブロックモデル
+│       │   └── item/           # アイテムモデル
+│       ├── blockstates/        # ブロック状態定義
+│       ├── sounds/             # サウンドファイル
+│       └── lang/               # 言語ファイル
+│           ├── en_us.json
+│           └── ja_jp.json
+│
+├── data/
+│   └── minecraft/
+│       ├── recipe/             # レシピ (1.21+)
+│       ├── loot_table/         # ルートテーブル (1.21+)
+│       │   ├── blocks/
+│       │   ├── entities/
+│       │   └── chests/
+│       ├── tags/               # タグ
+│       │   ├── block/
+│       │   ├── item/
+│       │   └── entity_type/
+│       ├── advancement/        # 進捗 (1.21+)
+│       └── worldgen/
+│           └── biome/          # バイオーム定義
+│
+└── META-INF/
 ```
 
 ---
 
-## 4. データ変換処理
+## 6. データ処理
 
-### 4.1 アイテムデータ生成
+### 6.1 アイテムデータ生成
 
 ```typescript
 // scripts/processors/items.ts
 import * as fs from 'fs/promises'
 import * as path from 'path'
 
-interface RawItemModel {
-  parent?: string
-  textures?: Record<string, string>
-  display?: Record<string, unknown>
-}
-
 interface ProcessedItem {
   id: string
   name: string
   stackSize: number
-  durability?: number
+  durability: number | null
   fireResistant: boolean
   rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC'
-  food?: FoodData
-  equipment?: EquipmentData
-  tool?: ToolData
+  food: FoodData | null
+  equipment: EquipmentData | null
+  tool: ToolData | null
 }
 
 export async function processItems(
   version: string,
-  extractedDir: string
+  extractedDir: string,
+  reportsDir: string
 ): Promise<ProcessedItem[]> {
   const items: ProcessedItem[] = []
 
-  // モデルファイルからアイテム一覧を取得
-  const modelsDir = path.join(extractedDir, version, 'assets/minecraft/models/item')
-  const modelFiles = await fs.readdir(modelsDir)
+  // レジストリからアイテムID一覧取得
+  const registryPath = path.join(reportsDir, 'registries', 'item.json')
+  const registry = JSON.parse(await fs.readFile(registryPath, 'utf-8'))
+  const itemIds: string[] = Object.keys(registry.entries || registry)
 
-  for (const file of modelFiles) {
-    if (!file.endsWith('.json')) continue
+  // モデルディレクトリ
+  const modelsDir = path.join(extractedDir, 'assets/minecraft/models/item')
 
-    const itemName = file.replace('.json', '')
-    const modelPath = path.join(modelsDir, file)
-    const modelData: RawItemModel = JSON.parse(await fs.readFile(modelPath, 'utf-8'))
+  for (const itemId of itemIds) {
+    const name = itemId.replace('minecraft:', '')
 
     // 基本情報
     const item: ProcessedItem = {
-      id: `minecraft:${itemName}`,
-      name: itemName,
-      stackSize: getStackSize(itemName),
-      fireResistant: isFireResistant(itemName),
-      rarity: getRarity(itemName),
-    }
-
-    // 耐久値
-    const durability = getDurability(itemName)
-    if (durability) {
-      item.durability = durability
-    }
-
-    // 食料データ
-    const foodData = getFoodData(itemName)
-    if (foodData) {
-      item.food = foodData
-    }
-
-    // 装備データ
-    const equipmentData = getEquipmentData(itemName)
-    if (equipmentData) {
-      item.equipment = equipmentData
-    }
-
-    // ツールデータ
-    const toolData = getToolData(itemName)
-    if (toolData) {
-      item.tool = toolData
+      id: itemId,
+      name,
+      stackSize: getStackSize(name),
+      durability: getDurability(name),
+      fireResistant: isFireResistant(name),
+      rarity: getRarity(name),
+      food: getFoodData(name),
+      equipment: getEquipmentData(name),
+      tool: getToolData(name),
     }
 
     items.push(item)
@@ -293,25 +478,110 @@ export async function processItems(
   return items
 }
 
-// ハードコードされたデータ（JARから取得できない情報）
+// ========== ハードコードされたゲームデータ ==========
+// これらのデータはJARからは直接取得できないため、
+// Minecraft Wikiなどを参考にハードコードします
+
 const STACK_SIZES: Record<string, number> = {
-  // ツール・武器・防具
-  diamond_sword: 1,
-  diamond_pickaxe: 1,
-  diamond_axe: 1,
-  // ... 他のアイテム
+  // デフォルトは64
+  // 以下はスタック不可または16個まで
+  'diamond_sword': 1,
+  'diamond_pickaxe': 1,
+  'diamond_axe': 1,
+  'diamond_shovel': 1,
+  'diamond_hoe': 1,
+  'iron_sword': 1,
+  'iron_pickaxe': 1,
+  'bow': 1,
+  'trident': 1,
+  'elytra': 1,
+  'shield': 1,
+  'fishing_rod': 1,
+  'egg': 16,
+  'snowball': 16,
+  'ender_pearl': 16,
+  'sign': 16,
+  'bucket': 16,
+  'water_bucket': 1,
+  'lava_bucket': 1,
+  // ... 続く
 }
 
 const DURABILITIES: Record<string, number> = {
-  diamond_sword: 1561,
-  diamond_pickaxe: 1561,
-  iron_sword: 250,
-  // ...
+  'diamond_sword': 1561,
+  'diamond_pickaxe': 1561,
+  'diamond_axe': 1561,
+  'diamond_shovel': 1561,
+  'diamond_hoe': 1561,
+  'netherite_sword': 2031,
+  'netherite_pickaxe': 2031,
+  'iron_sword': 250,
+  'iron_pickaxe': 250,
+  'stone_sword': 131,
+  'stone_pickaxe': 131,
+  'wooden_sword': 59,
+  'wooden_pickaxe': 59,
+  'golden_sword': 32,
+  'golden_pickaxe': 32,
+  'bow': 384,
+  'trident': 250,
+  'elytra': 432,
+  'shield': 336,
+  'fishing_rod': 64,
+  'shears': 238,
+  'flint_and_steel': 64,
+  // 防具
+  'diamond_helmet': 363,
+  'diamond_chestplate': 528,
+  'diamond_leggings': 495,
+  'diamond_boots': 429,
+  'netherite_helmet': 407,
+  'netherite_chestplate': 592,
+  'netherite_leggings': 555,
+  'netherite_boots': 481,
+  // ... 続く
 }
 
+const FIRE_RESISTANT_ITEMS = new Set([
+  'netherite_sword',
+  'netherite_pickaxe',
+  'netherite_axe',
+  'netherite_shovel',
+  'netherite_hoe',
+  'netherite_helmet',
+  'netherite_chestplate',
+  'netherite_leggings',
+  'netherite_boots',
+  'netherite_ingot',
+  'netherite_scrap',
+  'ancient_debris',
+])
+
+const RARE_ITEMS = new Set([
+  'enchanted_golden_apple',
+  'nether_star',
+  'elytra',
+  'dragon_egg',
+  'beacon',
+  'conduit',
+  'heart_of_the_sea',
+  'totem_of_undying',
+])
+
+const UNCOMMON_ITEMS = new Set([
+  'golden_apple',
+  'music_disc_13',
+  'music_disc_cat',
+  // ... 他のレコード
+])
+
 const FOOD_DATA: Record<string, FoodData> = {
-  apple: { nutrition: 4, saturation: 2.4, canAlwaysEat: false, effects: [] },
-  golden_apple: {
+  'apple': { nutrition: 4, saturation: 2.4, canAlwaysEat: false, effects: [] },
+  'baked_potato': { nutrition: 5, saturation: 6.0, canAlwaysEat: false, effects: [] },
+  'beef': { nutrition: 3, saturation: 1.8, canAlwaysEat: false, effects: [] },
+  'cooked_beef': { nutrition: 8, saturation: 12.8, canAlwaysEat: false, effects: [] },
+  'bread': { nutrition: 5, saturation: 6.0, canAlwaysEat: false, effects: [] },
+  'golden_apple': {
     nutrition: 4,
     saturation: 9.6,
     canAlwaysEat: true,
@@ -320,28 +590,101 @@ const FOOD_DATA: Record<string, FoodData> = {
       { effect: 'absorption', duration: 2400, amplifier: 0, probability: 1 },
     ],
   },
-  // ...
+  'enchanted_golden_apple': {
+    nutrition: 4,
+    saturation: 9.6,
+    canAlwaysEat: true,
+    effects: [
+      { effect: 'regeneration', duration: 400, amplifier: 1, probability: 1 },
+      { effect: 'absorption', duration: 2400, amplifier: 3, probability: 1 },
+      { effect: 'resistance', duration: 6000, amplifier: 0, probability: 1 },
+      { effect: 'fire_resistance', duration: 6000, amplifier: 0, probability: 1 },
+    ],
+  },
+  'rotten_flesh': {
+    nutrition: 4,
+    saturation: 0.8,
+    canAlwaysEat: false,
+    effects: [
+      { effect: 'hunger', duration: 600, amplifier: 0, probability: 0.8 },
+    ],
+  },
+  // ... 続く
 }
 
-function getStackSize(itemName: string): number {
-  return STACK_SIZES[itemName] ?? 64
+const EQUIPMENT_DATA: Record<string, EquipmentData> = {
+  // 剣
+  'diamond_sword': { slot: 'MAINHAND', attackDamage: 7, attackSpeed: 1.6, armor: null, armorToughness: null, knockbackResistance: null },
+  'netherite_sword': { slot: 'MAINHAND', attackDamage: 8, attackSpeed: 1.6, armor: null, armorToughness: null, knockbackResistance: null },
+  'iron_sword': { slot: 'MAINHAND', attackDamage: 6, attackSpeed: 1.6, armor: null, armorToughness: null, knockbackResistance: null },
+  'stone_sword': { slot: 'MAINHAND', attackDamage: 5, attackSpeed: 1.6, armor: null, armorToughness: null, knockbackResistance: null },
+  'wooden_sword': { slot: 'MAINHAND', attackDamage: 4, attackSpeed: 1.6, armor: null, armorToughness: null, knockbackResistance: null },
+  'golden_sword': { slot: 'MAINHAND', attackDamage: 4, attackSpeed: 1.6, armor: null, armorToughness: null, knockbackResistance: null },
+
+  // 防具
+  'diamond_helmet': { slot: 'HEAD', armor: 3, armorToughness: 2, knockbackResistance: null, attackDamage: null, attackSpeed: null },
+  'diamond_chestplate': { slot: 'CHEST', armor: 8, armorToughness: 2, knockbackResistance: null, attackDamage: null, attackSpeed: null },
+  'diamond_leggings': { slot: 'LEGS', armor: 6, armorToughness: 2, knockbackResistance: null, attackDamage: null, attackSpeed: null },
+  'diamond_boots': { slot: 'FEET', armor: 3, armorToughness: 2, knockbackResistance: null, attackDamage: null, attackSpeed: null },
+  'netherite_helmet': { slot: 'HEAD', armor: 3, armorToughness: 3, knockbackResistance: 0.1, attackDamage: null, attackSpeed: null },
+  'netherite_chestplate': { slot: 'CHEST', armor: 8, armorToughness: 3, knockbackResistance: 0.1, attackDamage: null, attackSpeed: null },
+  'netherite_leggings': { slot: 'LEGS', armor: 6, armorToughness: 3, knockbackResistance: 0.1, attackDamage: null, attackSpeed: null },
+  'netherite_boots': { slot: 'FEET', armor: 3, armorToughness: 3, knockbackResistance: 0.1, attackDamage: null, attackSpeed: null },
+  // ... 続く
 }
 
-function getDurability(itemName: string): number | undefined {
-  return DURABILITIES[itemName]
+const TOOL_DATA: Record<string, ToolData> = {
+  'diamond_pickaxe': { type: 'PICKAXE', tier: 'DIAMOND', speed: 8.0, damage: 5, enchantmentValue: 10 },
+  'diamond_axe': { type: 'AXE', tier: 'DIAMOND', speed: 8.0, damage: 9, enchantmentValue: 10 },
+  'diamond_shovel': { type: 'SHOVEL', tier: 'DIAMOND', speed: 8.0, damage: 5.5, enchantmentValue: 10 },
+  'diamond_hoe': { type: 'HOE', tier: 'DIAMOND', speed: 8.0, damage: 1, enchantmentValue: 10 },
+  'netherite_pickaxe': { type: 'PICKAXE', tier: 'NETHERITE', speed: 9.0, damage: 6, enchantmentValue: 15 },
+  'iron_pickaxe': { type: 'PICKAXE', tier: 'IRON', speed: 6.0, damage: 4, enchantmentValue: 14 },
+  'stone_pickaxe': { type: 'PICKAXE', tier: 'STONE', speed: 4.0, damage: 3, enchantmentValue: 5 },
+  'wooden_pickaxe': { type: 'PICKAXE', tier: 'WOOD', speed: 2.0, damage: 2, enchantmentValue: 15 },
+  'golden_pickaxe': { type: 'PICKAXE', tier: 'GOLD', speed: 12.0, damage: 2, enchantmentValue: 22 },
+  // ... 続く
 }
 
-function getFoodData(itemName: string): FoodData | undefined {
-  return FOOD_DATA[itemName]
+function getStackSize(name: string): number {
+  return STACK_SIZES[name] ?? 64
 }
 
-// ... 他のヘルパー関数
+function getDurability(name: string): number | null {
+  return DURABILITIES[name] ?? null
+}
+
+function isFireResistant(name: string): boolean {
+  return FIRE_RESISTANT_ITEMS.has(name)
+}
+
+function getRarity(name: string): 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' {
+  if (name === 'enchanted_golden_apple') return 'EPIC'
+  if (RARE_ITEMS.has(name)) return 'RARE'
+  if (UNCOMMON_ITEMS.has(name)) return 'UNCOMMON'
+  return 'COMMON'
+}
+
+function getFoodData(name: string): FoodData | null {
+  return FOOD_DATA[name] ?? null
+}
+
+function getEquipmentData(name: string): EquipmentData | null {
+  return EQUIPMENT_DATA[name] ?? null
+}
+
+function getToolData(name: string): ToolData | null {
+  return TOOL_DATA[name] ?? null
+}
 ```
 
-### 4.2 ブロックデータ生成
+### 6.2 ブロックデータ生成
 
 ```typescript
 // scripts/processors/blocks.ts
+import * as fs from 'fs/promises'
+import * as path from 'path'
+
 interface ProcessedBlock {
   id: string
   name: string
@@ -360,39 +703,38 @@ interface ProcessedBlock {
 
 export async function processBlocks(
   version: string,
-  extractedDir: string
+  extractedDir: string,
+  reportsDir: string
 ): Promise<ProcessedBlock[]> {
   const blocks: ProcessedBlock[] = []
 
-  // blockstatesからブロック一覧を取得
-  const blockstatesDir = path.join(
-    extractedDir,
-    version,
-    'assets/minecraft/blockstates'
-  )
-  const blockstateFiles = await fs.readdir(blockstatesDir)
+  // サーバーレポートからブロック情報取得
+  const blocksReportPath = path.join(reportsDir, 'blocks.json')
+  const blocksReport = JSON.parse(await fs.readFile(blocksReportPath, 'utf-8'))
 
-  for (const file of blockstateFiles) {
-    if (!file.endsWith('.json')) continue
+  // blockstatesディレクトリ
+  const blockstatesDir = path.join(extractedDir, 'assets/minecraft/blockstates')
 
-    const blockName = file.replace('.json', '')
-    const blockstatePath = path.join(blockstatesDir, file)
-    const blockstateData = JSON.parse(await fs.readFile(blockstatePath, 'utf-8'))
+  for (const [blockId, blockData] of Object.entries(blocksReport) as any) {
+    const name = blockId.replace('minecraft:', '')
+
+    // ブロック状態をパース
+    const states = parseBlockStates(blockData.properties || {})
 
     const block: ProcessedBlock = {
-      id: `minecraft:${blockName}`,
-      name: blockName,
-      hardness: getHardness(blockName),
-      blastResistance: getBlastResistance(blockName),
-      friction: getFriction(blockName),
-      speedFactor: getSpeedFactor(blockName),
-      jumpFactor: getJumpFactor(blockName),
-      luminance: getLuminance(blockName),
-      requiresCorrectTool: requiresCorrectTool(blockName),
-      hasGravity: hasGravity(blockName),
-      flammable: isFlammable(blockName),
-      replaceable: isReplaceable(blockName),
-      states: parseBlockStates(blockstateData),
+      id: blockId,
+      name,
+      hardness: getHardness(name),
+      blastResistance: getBlastResistance(name),
+      friction: getFriction(name),
+      speedFactor: getSpeedFactor(name),
+      jumpFactor: getJumpFactor(name),
+      luminance: getLuminance(name),
+      requiresCorrectTool: requiresCorrectTool(name),
+      hasGravity: hasGravity(name),
+      flammable: isFlammable(name),
+      replaceable: isReplaceable(name),
+      states,
     }
 
     blocks.push(block)
@@ -401,82 +743,390 @@ export async function processBlocks(
   return blocks
 }
 
-// ブロック状態のパース
-function parseBlockStates(blockstateData: any): BlockState[] {
+function parseBlockStates(properties: Record<string, string[]>): BlockState[] {
   const states: BlockState[] = []
 
-  if (blockstateData.variants) {
-    // Simple variants
-    const variantKeys = Object.keys(blockstateData.variants)
-    const stateProps = new Map<string, Set<string>>()
-
-    for (const key of variantKeys) {
-      if (key === '') continue
-
-      const pairs = key.split(',')
-      for (const pair of pairs) {
-        const [name, value] = pair.split('=')
-        if (!stateProps.has(name)) {
-          stateProps.set(name, new Set())
-        }
-        stateProps.get(name)!.add(value)
-      }
-    }
-
-    for (const [name, values] of stateProps) {
-      states.push({
-        name,
-        type: inferBlockStateType(name, values),
-        values: Array.from(values),
-        defaultValue: Array.from(values)[0],
-      })
-    }
-  }
-
-  if (blockstateData.multipart) {
-    // Multipart model - extract from conditions
-    const conditions = blockstateData.multipart
-      .filter((part: any) => part.when)
-      .map((part: any) => part.when)
-
-    // ... 条件からステート抽出
+  for (const [name, values] of Object.entries(properties)) {
+    states.push({
+      name,
+      type: inferBlockStateType(name, values),
+      values,
+      defaultValue: values[0],
+    })
   }
 
   return states
 }
+
+function inferBlockStateType(name: string, values: string[]): string {
+  if (values.every(v => v === 'true' || v === 'false')) {
+    return 'BOOLEAN'
+  }
+  if (values.every(v => !isNaN(Number(v)))) {
+    return 'INTEGER'
+  }
+  if (['north', 'south', 'east', 'west', 'up', 'down'].some(d => values.includes(d))) {
+    return 'DIRECTION'
+  }
+  return 'ENUM'
+}
+
+// ========== ハードコードされたブロックデータ ==========
+
+const BLOCK_HARDNESS: Record<string, number> = {
+  'stone': 1.5,
+  'granite': 1.5,
+  'diorite': 1.5,
+  'andesite': 1.5,
+  'dirt': 0.5,
+  'grass_block': 0.6,
+  'cobblestone': 2.0,
+  'oak_planks': 2.0,
+  'oak_log': 2.0,
+  'obsidian': 50.0,
+  'crying_obsidian': 50.0,
+  'bedrock': -1, // 破壊不可
+  'diamond_block': 5.0,
+  'netherite_block': 50.0,
+  'iron_block': 5.0,
+  'gold_block': 3.0,
+  // ... 続く
+}
+
+const BLOCK_BLAST_RESISTANCE: Record<string, number> = {
+  'stone': 6.0,
+  'obsidian': 1200.0,
+  'crying_obsidian': 1200.0,
+  'bedrock': 3600000.0,
+  'netherite_block': 1200.0,
+  'ancient_debris': 1200.0,
+  'end_portal_frame': 3600000.0,
+  // ... 続く
+}
+
+const LUMINANCE: Record<string, number> = {
+  'torch': 14,
+  'wall_torch': 14,
+  'glowstone': 15,
+  'sea_lantern': 15,
+  'lantern': 15,
+  'soul_lantern': 10,
+  'jack_o_lantern': 15,
+  'lava': 15,
+  'fire': 15,
+  'redstone_lamp': 15, // オン時のみ
+  'shroomlight': 15,
+  'beacon': 15,
+  'end_rod': 14,
+  'magma_block': 3,
+  'brewing_stand': 1,
+  'brown_mushroom': 1,
+  // ... 続く
+}
+
+const GRAVITY_BLOCKS = new Set([
+  'sand',
+  'red_sand',
+  'gravel',
+  'anvil',
+  'chipped_anvil',
+  'damaged_anvil',
+  'dragon_egg',
+  'white_concrete_powder',
+  'orange_concrete_powder',
+  // ... 他のコンクリートパウダー
+])
+
+const FLAMMABLE_BLOCKS = new Set([
+  'oak_planks', 'spruce_planks', 'birch_planks',
+  'oak_log', 'spruce_log', 'birch_log',
+  'oak_leaves', 'spruce_leaves', 'birch_leaves',
+  'bookshelf',
+  'tnt',
+  'wool', // 全色
+  'carpet', // 全色
+  // ... 続く
+])
+
+function getHardness(name: string): number {
+  return BLOCK_HARDNESS[name] ?? 1.0
+}
+
+function getBlastResistance(name: string): number {
+  return BLOCK_BLAST_RESISTANCE[name] ?? 6.0
+}
+
+function getFriction(name: string): number {
+  if (name === 'ice' || name === 'packed_ice' || name === 'blue_ice') {
+    return name === 'blue_ice' ? 0.989 : 0.98
+  }
+  if (name === 'slime_block') return 0.8
+  return 0.6 // デフォルト
+}
+
+function getSpeedFactor(name: string): number {
+  if (name === 'soul_sand' || name === 'honey_block') return 0.4
+  return 1.0
+}
+
+function getJumpFactor(name: string): number {
+  if (name === 'honey_block') return 0.5
+  return 1.0
+}
+
+function getLuminance(name: string): number {
+  return LUMINANCE[name] ?? 0
+}
+
+function requiresCorrectTool(name: string): boolean {
+  // 鉄以上のツールが必要なブロック
+  const requiresTool = [
+    'obsidian', 'crying_obsidian', 'diamond_ore', 'deepslate_diamond_ore',
+    'emerald_ore', 'deepslate_emerald_ore', 'gold_ore', 'deepslate_gold_ore',
+    'nether_gold_ore', 'redstone_ore', 'deepslate_redstone_ore',
+    'ancient_debris', 'netherite_block',
+  ]
+  return requiresTool.includes(name)
+}
+
+function hasGravity(name: string): boolean {
+  return GRAVITY_BLOCKS.has(name)
+}
+
+function isFlammable(name: string): boolean {
+  return FLAMMABLE_BLOCKS.has(name) ||
+    name.includes('planks') ||
+    name.includes('log') ||
+    name.includes('wood') ||
+    name.includes('leaves') ||
+    name.includes('wool') ||
+    name.includes('carpet')
+}
+
+function isReplaceable(name: string): boolean {
+  return ['air', 'cave_air', 'void_air', 'water', 'lava', 'grass', 'tall_grass', 'fern', 'large_fern'].includes(name)
+}
 ```
 
-### 4.3 レシピデータ生成
+### 6.3 エンティティデータ生成
+
+```typescript
+// scripts/processors/entities.ts
+import * as fs from 'fs/promises'
+import * as path from 'path'
+
+interface ProcessedEntity {
+  id: string
+  name: string
+  category: EntityCategory
+  health: number
+  width: number
+  height: number
+  fireImmune: boolean
+  mob: MobData | null
+}
+
+export async function processEntities(
+  version: string,
+  extractedDir: string,
+  reportsDir: string
+): Promise<ProcessedEntity[]> {
+  const entities: ProcessedEntity[] = []
+
+  // レジストリからエンティティID一覧取得
+  const registryPath = path.join(reportsDir, 'registries', 'entity_type.json')
+  const registry = JSON.parse(await fs.readFile(registryPath, 'utf-8'))
+  const entityIds: string[] = Object.keys(registry.entries || registry)
+
+  for (const entityId of entityIds) {
+    const name = entityId.replace('minecraft:', '')
+
+    const entity: ProcessedEntity = {
+      id: entityId,
+      name,
+      category: getEntityCategory(name),
+      health: getEntityHealth(name),
+      width: getEntityWidth(name),
+      height: getEntityHeight(name),
+      fireImmune: isEntityFireImmune(name),
+      mob: getMobData(name),
+    }
+
+    entities.push(entity)
+  }
+
+  return entities
+}
+
+// ========== エンティティデータ ==========
+// JARからは取得できないため、Minecraft Wikiを参考にハードコード
+
+const ENTITY_CATEGORIES: Record<string, EntityCategory> = {
+  // モンスター
+  'zombie': 'MONSTER',
+  'skeleton': 'MONSTER',
+  'creeper': 'MONSTER',
+  'spider': 'MONSTER',
+  'enderman': 'MONSTER',
+  'witch': 'MONSTER',
+  'slime': 'MONSTER',
+  'phantom': 'MONSTER',
+  'drowned': 'MONSTER',
+  'husk': 'MONSTER',
+  'stray': 'MONSTER',
+  'blaze': 'MONSTER',
+  'ghast': 'MONSTER',
+  'wither_skeleton': 'MONSTER',
+  'piglin': 'MONSTER',
+  'piglin_brute': 'MONSTER',
+  'hoglin': 'MONSTER',
+  'zoglin': 'MONSTER',
+  'warden': 'MONSTER',
+
+  // クリーチャー
+  'pig': 'CREATURE',
+  'cow': 'CREATURE',
+  'sheep': 'CREATURE',
+  'chicken': 'CREATURE',
+  'horse': 'CREATURE',
+  'donkey': 'CREATURE',
+  'mule': 'CREATURE',
+  'wolf': 'CREATURE',
+  'cat': 'CREATURE',
+  'ocelot': 'CREATURE',
+  'rabbit': 'CREATURE',
+  'fox': 'CREATURE',
+  'bee': 'CREATURE',
+  'goat': 'CREATURE',
+  'frog': 'CREATURE',
+  'camel': 'CREATURE',
+  'sniffer': 'CREATURE',
+  'armadillo': 'CREATURE',
+
+  // 水生
+  'squid': 'WATER_CREATURE',
+  'glow_squid': 'WATER_CREATURE',
+  'dolphin': 'WATER_CREATURE',
+  'cod': 'WATER_AMBIENT',
+  'salmon': 'WATER_AMBIENT',
+  'tropical_fish': 'WATER_AMBIENT',
+  'pufferfish': 'WATER_AMBIENT',
+  'axolotl': 'UNDERGROUND_WATER_CREATURE',
+
+  // アンビエント
+  'bat': 'AMBIENT',
+
+  // その他
+  'villager': 'MISC',
+  'iron_golem': 'MISC',
+  'snow_golem': 'MISC',
+  'armor_stand': 'MISC',
+}
+
+const ENTITY_HEALTH: Record<string, number> = {
+  'zombie': 20,
+  'skeleton': 20,
+  'creeper': 20,
+  'spider': 16,
+  'enderman': 40,
+  'witch': 26,
+  'slime': 16, // 大サイズ
+  'phantom': 20,
+  'blaze': 20,
+  'ghast': 10,
+  'wither_skeleton': 20,
+  'warden': 500,
+  'ender_dragon': 200,
+  'wither': 300,
+
+  'pig': 10,
+  'cow': 10,
+  'sheep': 8,
+  'chicken': 4,
+  'horse': 30, // 15-30の範囲
+  'wolf': 8,
+  'cat': 10,
+  'rabbit': 3,
+  'bee': 10,
+
+  'villager': 20,
+  'iron_golem': 100,
+  'snow_golem': 4,
+}
+
+const ENTITY_DIMENSIONS: Record<string, { width: number; height: number }> = {
+  'zombie': { width: 0.6, height: 1.95 },
+  'skeleton': { width: 0.6, height: 1.99 },
+  'creeper': { width: 0.6, height: 1.7 },
+  'spider': { width: 1.4, height: 0.9 },
+  'enderman': { width: 0.6, height: 2.9 },
+  'slime': { width: 2.04, height: 2.04 }, // 大サイズ
+  'pig': { width: 0.9, height: 0.9 },
+  'cow': { width: 0.9, height: 1.4 },
+  'sheep': { width: 0.9, height: 1.3 },
+  'chicken': { width: 0.4, height: 0.7 },
+  'horse': { width: 1.3965, height: 1.6 },
+  'wolf': { width: 0.6, height: 0.85 },
+  'villager': { width: 0.6, height: 1.95 },
+  'iron_golem': { width: 1.4, height: 2.7 },
+  'warden': { width: 0.9, height: 2.9 },
+  'ender_dragon': { width: 16.0, height: 8.0 },
+}
+
+const FIRE_IMMUNE_ENTITIES = new Set([
+  'blaze',
+  'ghast',
+  'magma_cube',
+  'strider',
+  'wither',
+  'wither_skeleton',
+  'zoglin',
+  'zombified_piglin',
+  'ender_dragon',
+])
+
+const MOB_DATA: Record<string, MobData> = {
+  'zombie': { attackDamage: 3, movementSpeed: 0.23, followRange: 35, spawnGroup: 'MONSTER' },
+  'skeleton': { attackDamage: 2, movementSpeed: 0.25, followRange: 16, spawnGroup: 'MONSTER' },
+  'creeper': { attackDamage: 0, movementSpeed: 0.25, followRange: 16, spawnGroup: 'MONSTER' },
+  'spider': { attackDamage: 2, movementSpeed: 0.3, followRange: 16, spawnGroup: 'MONSTER' },
+  'enderman': { attackDamage: 7, movementSpeed: 0.3, followRange: 64, spawnGroup: 'MONSTER' },
+  'warden': { attackDamage: 30, movementSpeed: 0.3, followRange: 16, spawnGroup: 'MONSTER' },
+  'wolf': { attackDamage: 4, movementSpeed: 0.3, followRange: 16, spawnGroup: 'CREATURE' },
+  'iron_golem': { attackDamage: 21, movementSpeed: 0.25, followRange: 16, spawnGroup: 'MISC' },
+}
+
+function getEntityCategory(name: string): EntityCategory {
+  return ENTITY_CATEGORIES[name] ?? 'MISC'
+}
+
+function getEntityHealth(name: string): number {
+  return ENTITY_HEALTH[name] ?? 20
+}
+
+function getEntityWidth(name: string): number {
+  return ENTITY_DIMENSIONS[name]?.width ?? 0.6
+}
+
+function getEntityHeight(name: string): number {
+  return ENTITY_DIMENSIONS[name]?.height ?? 1.8
+}
+
+function isEntityFireImmune(name: string): boolean {
+  return FIRE_IMMUNE_ENTITIES.has(name)
+}
+
+function getMobData(name: string): MobData | null {
+  return MOB_DATA[name] ?? null
+}
+```
+
+### 6.4 レシピデータ生成
 
 ```typescript
 // scripts/processors/recipes.ts
-interface RawRecipe {
-  type: string
-  pattern?: string[]
-  key?: Record<string, { item?: string; tag?: string }>
-  ingredients?: Array<{ item?: string; tag?: string }>
-  ingredient?: { item?: string; tag?: string }
-  result: { item: string; count?: number } | string
-  experience?: number
-  cookingtime?: number
-}
-
-interface ProcessedRecipe {
-  id: string
-  type: string
-  group?: string
-  result: {
-    item: string
-    count: number
-  }
-  // タイプ別の追加フィールド
-  pattern?: string[]
-  key?: RecipeKey[]
-  ingredients?: Ingredient[]
-  ingredient?: Ingredient
-  experience?: number
-  cookingTime?: number
-}
+import * as fs from 'fs/promises'
+import * as path from 'path'
 
 export async function processRecipes(
   version: string,
@@ -484,14 +1134,19 @@ export async function processRecipes(
 ): Promise<ProcessedRecipe[]> {
   const recipes: ProcessedRecipe[] = []
 
-  const recipesDir = path.join(extractedDir, version, 'data/minecraft/recipes')
+  // レシピディレクトリ（バージョンによってパスが異なる）
+  let recipesDir = path.join(extractedDir, 'data/minecraft/recipe')
+  if (!await pathExists(recipesDir)) {
+    recipesDir = path.join(extractedDir, 'data/minecraft/recipes')
+  }
+
   const recipeFiles = await getFilesRecursive(recipesDir)
 
   for (const file of recipeFiles) {
     if (!file.endsWith('.json')) continue
 
     const recipePath = path.join(recipesDir, file)
-    const rawRecipe: RawRecipe = JSON.parse(await fs.readFile(recipePath, 'utf-8'))
+    const rawRecipe = JSON.parse(await fs.readFile(recipePath, 'utf-8'))
 
     const recipeName = file.replace('.json', '').replace(/\//g, '_')
     const processed = processRecipe(recipeName, rawRecipe)
@@ -504,13 +1159,13 @@ export async function processRecipes(
   return recipes
 }
 
-function processRecipe(name: string, raw: RawRecipe): ProcessedRecipe | null {
+function processRecipe(name: string, raw: any): ProcessedRecipe | null {
   const type = normalizeRecipeType(raw.type)
 
-  const base: ProcessedRecipe = {
+  const base = {
     id: `minecraft:${name}`,
     type,
-    result: normalizeResult(raw.result),
+    group: raw.group || null,
   }
 
   switch (type) {
@@ -518,13 +1173,17 @@ function processRecipe(name: string, raw: RawRecipe): ProcessedRecipe | null {
       return {
         ...base,
         pattern: raw.pattern,
-        key: raw.key ? normalizeKey(raw.key) : [],
+        key: normalizeKey(raw.key),
+        width: raw.pattern[0].length,
+        height: raw.pattern.length,
+        result: normalizeResult(raw.result),
       }
 
     case 'CRAFTING_SHAPELESS':
       return {
         ...base,
-        ingredients: raw.ingredients?.map(normalizeIngredient) ?? [],
+        ingredients: raw.ingredients.map(normalizeIngredient),
+        result: normalizeResult(raw.result),
       }
 
     case 'SMELTING':
@@ -533,7 +1192,8 @@ function processRecipe(name: string, raw: RawRecipe): ProcessedRecipe | null {
     case 'CAMPFIRE_COOKING':
       return {
         ...base,
-        ingredient: raw.ingredient ? normalizeIngredient(raw.ingredient) : undefined,
+        ingredient: normalizeIngredient(raw.ingredient),
+        result: normalizeResult(raw.result),
         experience: raw.experience ?? 0,
         cookingTime: raw.cookingtime ?? 200,
       }
@@ -541,7 +1201,19 @@ function processRecipe(name: string, raw: RawRecipe): ProcessedRecipe | null {
     case 'STONECUTTING':
       return {
         ...base,
-        ingredient: raw.ingredient ? normalizeIngredient(raw.ingredient) : undefined,
+        ingredient: normalizeIngredient(raw.ingredient),
+        result: normalizeResult(raw.result),
+      }
+
+    case 'SMITHING_TRANSFORM':
+    case 'SMITHING_TRIM':
+      return {
+        ...base,
+        type: 'SMITHING',
+        template: normalizeIngredient(raw.template),
+        base: normalizeIngredient(raw.base),
+        addition: normalizeIngredient(raw.addition),
+        result: normalizeResult(raw.result),
       }
 
     default:
@@ -559,378 +1231,50 @@ function normalizeRecipeType(type: string): string {
     'minecraft:smoking': 'SMOKING',
     'minecraft:campfire_cooking': 'CAMPFIRE_COOKING',
     'minecraft:stonecutting': 'STONECUTTING',
-    'minecraft:smithing_transform': 'SMITHING',
-    'minecraft:smithing_trim': 'SMITHING',
+    'minecraft:smithing_transform': 'SMITHING_TRANSFORM',
+    'minecraft:smithing_trim': 'SMITHING_TRIM',
   }
-  return typeMap[type] ?? type.toUpperCase()
+  return typeMap[type] ?? type.replace('minecraft:', '').toUpperCase()
 }
 
-function normalizeResult(result: RawRecipe['result']): { item: string; count: number } {
+function normalizeResult(result: any): { item: string; count: number } {
+  // 1.20.5以降の形式
+  if (result.id) {
+    return { item: result.id, count: result.count ?? 1 }
+  }
+  // 1.20.4以前の形式
   if (typeof result === 'string') {
     return { item: result, count: 1 }
   }
-  return {
-    item: result.item,
-    count: result.count ?? 1,
-  }
+  return { item: result.item, count: result.count ?? 1 }
 }
 
-function normalizeIngredient(
-  ing: { item?: string; tag?: string }
-): Ingredient {
+function normalizeIngredient(ing: any): Ingredient {
+  if (Array.isArray(ing)) {
+    return { items: ing.map(i => i.item || i.id || i), tag: null }
+  }
   if (ing.tag) {
-    return { type: 'tag', value: ing.tag }
+    return { items: [], tag: ing.tag }
   }
-  return { type: 'item', value: ing.item! }
-}
-```
-
-### 4.4 エンティティデータ生成
-
-```typescript
-// scripts/processors/entities.ts
-import minecraftData from 'minecraft-data'
-
-interface ProcessedEntity {
-  id: string
-  name: string
-  category: string
-  health: number
-  width: number
-  height: number
-  fireImmune: boolean
-  mob?: MobData
+  return { items: [ing.item || ing.id || ing], tag: null }
 }
 
-export async function processEntities(
-  version: string,
-  extractedDir: string
-): Promise<ProcessedEntity[]> {
-  // minecraft-dataから基本情報を取得
-  const mcData = minecraftData(version)
-  const entities: ProcessedEntity[] = []
-
-  for (const entity of mcData.entitiesArray) {
-    const processed: ProcessedEntity = {
-      id: `minecraft:${entity.name}`,
-      name: entity.name,
-      category: categorizeEntity(entity),
-      health: entity.health ?? 0,
-      width: entity.width ?? 0,
-      height: entity.height ?? 0,
-      fireImmune: isFireImmune(entity.name),
-    }
-
-    // モブデータ
-    if (isMob(entity)) {
-      processed.mob = {
-        attackDamage: getAttackDamage(entity.name),
-        movementSpeed: getMovementSpeed(entity.name),
-        followRange: getFollowRange(entity.name),
-        spawnGroup: getSpawnGroup(entity.name),
-      }
-    }
-
-    entities.push(processed)
-  }
-
-  return entities
-}
-
-function categorizeEntity(entity: any): string {
-  // カテゴリ判定ロジック
-  if (HOSTILE_MOBS.includes(entity.name)) return 'MONSTER'
-  if (PASSIVE_MOBS.includes(entity.name)) return 'CREATURE'
-  if (WATER_MOBS.includes(entity.name)) return 'WATER_CREATURE'
-  if (AMBIENT_MOBS.includes(entity.name)) return 'AMBIENT'
-  return 'MISC'
-}
-```
-
-### 4.5 ルートテーブル処理
-
-```typescript
-// scripts/processors/loot-tables.ts
-interface RawLootTable {
-  type: string
-  pools: LootPool[]
-}
-
-interface LootPool {
-  rolls: number | { min: number; max: number }
-  entries: LootEntry[]
-  conditions?: LootCondition[]
-}
-
-interface LootEntry {
-  type: string
-  name?: string
-  weight?: number
-  quality?: number
-  functions?: LootFunction[]
-  conditions?: LootCondition[]
-}
-
-interface ProcessedLootDrop {
-  item: string
-  minCount: number
-  maxCount: number
-  chance: number
-  conditions: string[]
-  lootingBonus?: number
-}
-
-export async function processLootTables(
-  version: string,
-  extractedDir: string
-): Promise<Map<string, ProcessedLootDrop[]>> {
-  const lootTables = new Map<string, ProcessedLootDrop[]>()
-
-  // ブロックのルートテーブル
-  const blocksDir = path.join(
-    extractedDir,
-    version,
-    'data/minecraft/loot_tables/blocks'
-  )
-  await processLootDir(blocksDir, 'block', lootTables)
-
-  // エンティティのルートテーブル
-  const entitiesDir = path.join(
-    extractedDir,
-    version,
-    'data/minecraft/loot_tables/entities'
-  )
-  await processLootDir(entitiesDir, 'entity', lootTables)
-
-  return lootTables
-}
-
-async function processLootDir(
-  dir: string,
-  prefix: string,
-  result: Map<string, ProcessedLootDrop[]>
-) {
-  const files = await fs.readdir(dir)
-
-  for (const file of files) {
-    if (!file.endsWith('.json')) continue
-
-    const tablePath = path.join(dir, file)
-    const tableData: RawLootTable = JSON.parse(
-      await fs.readFile(tablePath, 'utf-8')
-    )
-
-    const name = file.replace('.json', '')
-    const key = `${prefix}:minecraft:${name}`
-    const drops = processLootTable(tableData)
-
-    result.set(key, drops)
-  }
-}
-
-function processLootTable(table: RawLootTable): ProcessedLootDrop[] {
-  const drops: ProcessedLootDrop[] = []
-
-  for (const pool of table.pools) {
-    const poolChance = calculatePoolChance(pool)
-
-    for (const entry of pool.entries) {
-      if (entry.type !== 'minecraft:item') continue
-
-      const drop: ProcessedLootDrop = {
-        item: entry.name!,
-        minCount: 1,
-        maxCount: 1,
-        chance: poolChance * (entry.weight ?? 1),
-        conditions: [],
-      }
-
-      // 関数からドロップ数を計算
-      if (entry.functions) {
-        for (const func of entry.functions) {
-          if (func.function === 'minecraft:set_count') {
-            const count = func.count as any
-            if (typeof count === 'number') {
-              drop.minCount = count
-              drop.maxCount = count
-            } else if (count.min !== undefined) {
-              drop.minCount = count.min
-              drop.maxCount = count.max
-            }
-          }
-
-          if (func.function === 'minecraft:looting_enchant') {
-            drop.lootingBonus = (func as any).count?.max ?? 1
-          }
-        }
-      }
-
-      // 条件を文字列化
-      if (entry.conditions) {
-        drop.conditions = entry.conditions.map(conditionToString)
-      }
-
-      drops.push(drop)
-    }
-  }
-
-  return drops
+function normalizeKey(key: Record<string, any>): RecipeKey[] {
+  return Object.entries(key).map(([k, v]) => ({
+    key: k,
+    ingredient: normalizeIngredient(v),
+  }))
 }
 ```
 
 ---
 
-## 5. データマージ・正規化
+## 7. データアップロード
 
-### 5.1 マージ処理
-
-```typescript
-// scripts/merge-data.ts
-interface MergedData {
-  items: ProcessedItem[]
-  blocks: ProcessedBlock[]
-  entities: ProcessedEntity[]
-  recipes: ProcessedRecipe[]
-  lootTables: Map<string, ProcessedLootDrop[]>
-  tags: TagCollection
-  lang: Record<string, Record<string, string>>
-}
-
-export async function mergeData(
-  version: string,
-  extractedDir: string
-): Promise<MergedData> {
-  // 各種データを処理
-  const [items, blocks, entities, recipes, lootTables, tags, lang] =
-    await Promise.all([
-      processItems(version, extractedDir),
-      processBlocks(version, extractedDir),
-      processEntities(version, extractedDir),
-      processRecipes(version, extractedDir),
-      processLootTables(version, extractedDir),
-      processTags(version, extractedDir),
-      processLang(version, extractedDir),
-    ])
-
-  // アイテムにレシピ情報を紐付け
-  const recipesByResult = groupBy(recipes, (r) => r.result.item)
-  const recipesByIngredient = new Map<string, ProcessedRecipe[]>()
-
-  for (const recipe of recipes) {
-    const ingredients = extractIngredients(recipe)
-    for (const ing of ingredients) {
-      if (!recipesByIngredient.has(ing)) {
-        recipesByIngredient.set(ing, [])
-      }
-      recipesByIngredient.get(ing)!.push(recipe)
-    }
-  }
-
-  // ブロックにドロップ情報を紐付け
-  for (const block of blocks) {
-    const key = `block:${block.id}`
-    block.drops = lootTables.get(key) ?? []
-  }
-
-  // エンティティにドロップ情報を紐付け
-  for (const entity of entities) {
-    const key = `entity:${entity.id}`
-    entity.drops = lootTables.get(key) ?? []
-  }
-
-  return {
-    items,
-    blocks,
-    entities,
-    recipes,
-    lootTables,
-    tags,
-    lang,
-  }
-}
-```
-
-### 5.2 データ検証
+### 7.1 KV アップロード
 
 ```typescript
-// scripts/validate-data.ts
-import { z } from 'zod'
-
-const ItemSchema = z.object({
-  id: z.string().regex(/^minecraft:[a-z_]+$/),
-  name: z.string(),
-  stackSize: z.number().int().min(1).max(64),
-  durability: z.number().int().positive().optional(),
-  fireResistant: z.boolean(),
-  rarity: z.enum(['COMMON', 'UNCOMMON', 'RARE', 'EPIC']),
-})
-
-const BlockSchema = z.object({
-  id: z.string().regex(/^minecraft:[a-z_]+$/),
-  name: z.string(),
-  hardness: z.number().min(-1), // -1 = unbreakable
-  blastResistance: z.number().min(0),
-  luminance: z.number().int().min(0).max(15),
-})
-
-export async function validateData(data: MergedData): Promise<ValidationResult> {
-  const errors: ValidationError[] = []
-
-  // アイテム検証
-  for (const item of data.items) {
-    const result = ItemSchema.safeParse(item)
-    if (!result.success) {
-      errors.push({
-        type: 'item',
-        id: item.id,
-        errors: result.error.errors,
-      })
-    }
-  }
-
-  // ブロック検証
-  for (const block of data.blocks) {
-    const result = BlockSchema.safeParse(block)
-    if (!result.success) {
-      errors.push({
-        type: 'block',
-        id: block.id,
-        errors: result.error.errors,
-      })
-    }
-  }
-
-  // 参照整合性チェック
-  const itemIds = new Set(data.items.map((i) => i.id))
-
-  for (const recipe of data.recipes) {
-    // レシピの結果アイテムが存在するか
-    if (!itemIds.has(recipe.result.item)) {
-      errors.push({
-        type: 'recipe',
-        id: recipe.id,
-        message: `Result item not found: ${recipe.result.item}`,
-      })
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  }
-}
-```
-
----
-
-## 6. アップロード処理
-
-### 6.1 Cloudflare KVへのアップロード
-
-```typescript
-// scripts/upload-to-kv.ts
-import { Miniflare } from 'miniflare'
-
+// scripts/upload-kv.ts
 interface UploadConfig {
   accountId: string
   namespaceId: string
@@ -945,36 +1289,12 @@ export async function uploadToKV(
   const kvApi = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/storage/kv/namespaces/${config.namespaceId}`
 
   const uploads = [
-    // アイテムデータ
-    {
-      key: `items:${version}`,
-      value: JSON.stringify(data.items),
-    },
-    // ブロックデータ
-    {
-      key: `blocks:${version}`,
-      value: JSON.stringify(data.blocks),
-    },
-    // エンティティデータ
-    {
-      key: `entities:${version}`,
-      value: JSON.stringify(data.entities),
-    },
-    // レシピデータ
-    {
-      key: `recipes:${version}`,
-      value: JSON.stringify(data.recipes),
-    },
-    // タグデータ
-    {
-      key: `tags:items:${version}`,
-      value: JSON.stringify(data.tags.items),
-    },
-    {
-      key: `tags:blocks:${version}`,
-      value: JSON.stringify(data.tags.blocks),
-    },
-    // 言語データ
+    { key: `items:${version}`, value: JSON.stringify(data.items) },
+    { key: `blocks:${version}`, value: JSON.stringify(data.blocks) },
+    { key: `entities:${version}`, value: JSON.stringify(data.entities) },
+    { key: `recipes:${version}`, value: JSON.stringify(data.recipes) },
+    { key: `tags:items:${version}`, value: JSON.stringify(data.tags.items) },
+    { key: `tags:blocks:${version}`, value: JSON.stringify(data.tags.blocks) },
     ...Object.entries(data.lang).map(([lang, translations]) => ({
       key: `lang:${version}:${lang}`,
       value: JSON.stringify(translations),
@@ -997,24 +1317,35 @@ export async function uploadToKV(
 
     console.log(`Uploaded ${Math.min(i + batchSize, uploads.length)}/${uploads.length}`)
   }
+
+  // バージョンリスト更新
+  const existingVersions = await fetch(`${kvApi}/values/versions:list`, {
+    headers: { 'Authorization': `Bearer ${config.apiToken}` },
+  }).then(r => r.json()).catch(() => [])
+
+  if (!existingVersions.includes(version)) {
+    existingVersions.push(version)
+    existingVersions.sort((a: string, b: string) => b.localeCompare(a))
+
+    await fetch(`${kvApi}/values/versions:list`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${config.apiToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(existingVersions),
+    })
+  }
 }
 ```
 
-### 6.2 Cloudflare R2へのアセットアップロード
+### 7.2 R2 アップロード
 
 ```typescript
-// scripts/upload-to-r2.ts
+// scripts/upload-r2.ts
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import mime from 'mime-types'
-
-interface R2Config {
-  accountId: string
-  accessKeyId: string
-  secretAccessKey: string
-  bucketName: string
-}
 
 export async function uploadToR2(
   extractedDir: string,
@@ -1030,111 +1361,120 @@ export async function uploadToR2(
     },
   })
 
-  const assetsDir = path.join(extractedDir, version, 'assets/minecraft')
-
-  // アップロード対象ディレクトリ
-  const directories = ['textures', 'models', 'sounds']
+  const assetsDir = path.join(extractedDir, 'assets/minecraft')
+  const directories = ['textures', 'models', 'sounds', 'lang']
 
   for (const dir of directories) {
     const fullDir = path.join(assetsDir, dir)
+
+    if (!await pathExists(fullDir)) continue
+
     const files = await getFilesRecursive(fullDir)
 
     for (const file of files) {
-      const relativePath = path.relative(assetsDir, path.join(fullDir, file))
-      const key = `${version}/${relativePath}`
-
       const content = await fs.readFile(path.join(fullDir, file))
-      const contentType = mime.lookup(file) || 'application/octet-stream'
+      const key = `${version}/${dir}/${file}`
 
       await s3.send(new PutObjectCommand({
         Bucket: config.bucketName,
         Key: key,
         Body: content,
-        ContentType: contentType,
-        CacheControl: 'public, max-age=31536000, immutable',
+        ContentType: getContentType(file),
+        CacheControl: dir === 'lang'
+          ? 'public, max-age=86400, stale-while-revalidate=3600'
+          : 'public, max-age=31536000, immutable',
       }))
-
-      console.log(`Uploaded: ${key}`)
     }
+
+    console.log(`Uploaded ${dir}/ for ${version}`)
   }
 }
 
-async function getFilesRecursive(dir: string): Promise<string[]> {
-  const entries = await fs.readdir(dir, { withFileTypes: true })
-  const files: string[] = []
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      const subFiles = await getFilesRecursive(fullPath)
-      files.push(...subFiles.map((f) => path.join(entry.name, f)))
-    } else {
-      files.push(entry.name)
-    }
-  }
-
-  return files
+function getContentType(file: string): string {
+  if (file.endsWith('.png')) return 'image/png'
+  if (file.endsWith('.json')) return 'application/json'
+  if (file.endsWith('.ogg')) return 'audio/ogg'
+  return 'application/octet-stream'
 }
 ```
 
 ---
 
-## 7. 実行スクリプト
+## 8. 実行スクリプト
 
-### 7.1 メインスクリプト
+### 8.1 メインスクリプト
 
 ```typescript
 // scripts/sync-version.ts
-import { downloadJar } from './download-jar'
-import { extractMinecraftData } from './extract-data'
-import { mergeData } from './merge-data'
-import { validateData } from './validate-data'
-import { uploadToKV } from './upload-to-kv'
-import { uploadToR2 } from './upload-to-r2'
+import { downloadJars } from './download-jars'
+import { generateServerReports } from './generate-reports'
+import { extractClientJar } from './extract-client'
+import { processItems } from './processors/items'
+import { processBlocks } from './processors/blocks'
+import { processEntities } from './processors/entities'
+import { processRecipes } from './processors/recipes'
+import { processLootTables } from './processors/loot-tables'
+import { processTags } from './processors/tags'
+import { processLang } from './processors/lang'
+import { uploadToKV } from './upload-kv'
+import { uploadToR2 } from './upload-r2'
 
-interface SyncConfig {
-  version: string
-  kvConfig: KVConfig
-  r2Config: R2Config
-}
-
-async function syncVersion(config: SyncConfig) {
-  const { version } = config
+async function syncVersion(version: string) {
+  const outputDir = './data'
 
   console.log(`\n========== Syncing version ${version} ==========\n`)
 
-  // 1. JARダウンロード
-  console.log('Step 1: Downloading JAR...')
-  const jarPath = await downloadJar(version)
+  // 1. JAR ダウンロード
+  console.log('Step 1: Downloading JARs...')
+  const { clientPath, serverPath } = await downloadJars({ version, outputDir })
 
-  // 2. データ抽出
-  console.log('Step 2: Extracting data...')
-  const extractedDir = './extracted'
-  await extractMinecraftData({
+  // 2. サーバーレポート生成
+  console.log('Step 2: Generating server reports...')
+  const reportsDir = await generateServerReports({
     version,
-    jarPath,
-    outputDir: extractedDir,
+    serverJarPath: serverPath,
+    outputDir,
   })
 
-  // 3. データ変換・マージ
-  console.log('Step 3: Processing data...')
-  const data = await mergeData(version, extractedDir)
+  // 3. Client JAR 抽出
+  console.log('Step 3: Extracting client JAR...')
+  const extractedDir = await extractClientJar({
+    version,
+    clientJarPath: clientPath,
+    outputDir,
+  })
 
-  // 4. 検証
-  console.log('Step 4: Validating data...')
-  const validation = await validateData(data)
-  if (!validation.valid) {
-    console.error('Validation errors:', validation.errors)
-    throw new Error('Data validation failed')
-  }
+  // 4. データ処理
+  console.log('Step 4: Processing data...')
+  const [items, blocks, entities, recipes, lootTables, tags, lang] =
+    await Promise.all([
+      processItems(version, extractedDir, reportsDir),
+      processBlocks(version, extractedDir, reportsDir),
+      processEntities(version, extractedDir, reportsDir),
+      processRecipes(version, extractedDir),
+      processLootTables(version, extractedDir),
+      processTags(version, extractedDir),
+      processLang(version, extractedDir),
+    ])
 
-  // 5. KVアップロード
+  const mergedData = { items, blocks, entities, recipes, lootTables, tags, lang }
+
+  // 5. KV アップロード
   console.log('Step 5: Uploading to KV...')
-  await uploadToKV(data, version, config.kvConfig)
+  await uploadToKV(mergedData, version, {
+    accountId: process.env.CF_ACCOUNT_ID!,
+    namespaceId: process.env.CF_KV_NAMESPACE_ID!,
+    apiToken: process.env.CF_API_TOKEN!,
+  })
 
-  // 6. R2アップロード
+  // 6. R2 アップロード
   console.log('Step 6: Uploading assets to R2...')
-  await uploadToR2(extractedDir, version, config.r2Config)
+  await uploadToR2(extractedDir, version, {
+    accountId: process.env.CF_ACCOUNT_ID!,
+    accessKeyId: process.env.CF_R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.CF_R2_SECRET_ACCESS_KEY!,
+    bucketName: process.env.CF_R2_BUCKET_NAME!,
+  })
 
   console.log(`\n========== Version ${version} synced successfully ==========\n`)
 }
@@ -1146,40 +1486,63 @@ if (!version) {
   process.exit(1)
 }
 
-syncVersion({
-  version,
-  kvConfig: {
-    accountId: process.env.CF_ACCOUNT_ID!,
-    namespaceId: process.env.CF_KV_NAMESPACE_ID!,
-    apiToken: process.env.CF_API_TOKEN!,
-  },
-  r2Config: {
-    accountId: process.env.CF_ACCOUNT_ID!,
-    accessKeyId: process.env.CF_R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.CF_R2_SECRET_ACCESS_KEY!,
-    bucketName: process.env.CF_R2_BUCKET_NAME!,
-  },
-})
+syncVersion(version)
 ```
 
-### 7.2 package.json スクリプト
+### 8.2 package.json
 
 ```json
 {
   "scripts": {
     "sync-version": "tsx scripts/sync-version.ts",
-    "sync-all": "tsx scripts/sync-all-versions.ts",
-    "validate": "tsx scripts/validate-data.ts",
-    "extract": "tsx scripts/extract-data.ts",
-    "upload-kv": "tsx scripts/upload-to-kv.ts",
-    "upload-r2": "tsx scripts/upload-to-r2.ts"
+    "download": "tsx scripts/download-jars.ts",
+    "extract": "tsx scripts/extract-client.ts",
+    "reports": "tsx scripts/generate-reports.ts",
+    "upload-kv": "tsx scripts/upload-kv.ts",
+    "upload-r2": "tsx scripts/upload-r2.ts"
   }
 }
 ```
 
 ---
 
-## 8. GitHub Actions ワークフロー
+## 9. ハードコードデータの管理
+
+### 9.1 データファイル構成
+
+JARから取得できないデータ（HP、攻撃力、スタック数など）は、JSONファイルとして管理します。
+
+```
+scripts/
+└── data/
+    ├── items/
+    │   ├── stack-sizes.json
+    │   ├── durabilities.json
+    │   ├── rarities.json
+    │   ├── food.json
+    │   ├── equipment.json
+    │   └── tools.json
+    ├── blocks/
+    │   ├── hardness.json
+    │   ├── blast-resistance.json
+    │   ├── luminance.json
+    │   └── properties.json
+    └── entities/
+        ├── health.json
+        ├── dimensions.json
+        └── mob-data.json
+```
+
+### 9.2 データ更新手順
+
+1. 新バージョンリリース時にMinecraft Wikiを参照
+2. 変更されたアイテム/ブロック/エンティティのデータを更新
+3. プルリクエストで変更をレビュー
+4. マージ後、`sync-version`を実行
+
+---
+
+## 10. GitHub Actions
 
 ```yaml
 # .github/workflows/sync-data.yml
@@ -1187,16 +1550,15 @@ name: Sync Minecraft Data
 
 on:
   schedule:
-    # 毎日 UTC 0:00 に実行
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 毎日 UTC 0:00
   workflow_dispatch:
     inputs:
       version:
-        description: 'Minecraft version to sync (leave empty for latest)'
+        description: 'Minecraft version to sync'
         required: false
 
 jobs:
-  check-version:
+  check-new-version:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.check.outputs.new_version }}
@@ -1205,28 +1567,27 @@ jobs:
         id: check
         run: |
           LATEST=$(curl -s https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.latest.release')
-          CURRENT=$(curl -s https://api.example.com/graphql -X POST -H "Content-Type: application/json" -d '{"query":"{ latestVersion { id } }"}' | jq -r '.data.latestVersion.id')
-
-          if [ "$LATEST" != "$CURRENT" ] || [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "new_version=${{ github.event.inputs.version || env.LATEST }}" >> $GITHUB_OUTPUT
-          fi
+          # 現在同期済みのバージョンと比較
+          # ...
 
   sync:
-    needs: check-version
-    if: needs.check-version.outputs.new_version
+    needs: check-new-version
+    if: needs.check-new-version.outputs.new_version || github.event.inputs.version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
       - run: pnpm install
-
-      - name: Sync version
-        run: pnpm sync-version ${{ needs.check-version.outputs.new_version }}
+      - run: pnpm sync-version ${{ github.event.inputs.version || needs.check-new-version.outputs.new_version }}
         env:
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}

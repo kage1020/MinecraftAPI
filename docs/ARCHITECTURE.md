@@ -6,42 +6,34 @@
 minecraft-api/
 ├── src/
 │   ├── index.ts                 # エントリーポイント
-│   ├── app.ts                   # Honoアプリケーション設定
 │   │
-│   ├── graphql/
-│   │   ├── index.ts             # GraphQL Yoga設定
-│   │   ├── schema.ts            # Pothosスキーマビルダー
-│   │   ├── context.ts           # GraphQLコンテキスト定義
-│   │   │
-│   │   ├── types/               # GraphQL型定義
-│   │   │   ├── index.ts
+│   ├── graphql/                 # GraphQL (Pylon)
+│   │   ├── index.ts             # Pylonサービス定義
+│   │   ├── resolvers/
 │   │   │   ├── version.ts
 │   │   │   ├── item.ts
 │   │   │   ├── block.ts
 │   │   │   ├── recipe.ts
 │   │   │   ├── entity.ts
 │   │   │   ├── enchantment.ts
-│   │   │   ├── effect.ts
-│   │   │   ├── biome.ts
-│   │   │   ├── tag.ts
 │   │   │   └── search.ts
-│   │   │
-│   │   ├── inputs/              # 入力型・フィルター
-│   │   │   ├── index.ts
-│   │   │   ├── pagination.ts
-│   │   │   ├── item-filter.ts
-│   │   │   ├── block-filter.ts
-│   │   │   ├── recipe-filter.ts
-│   │   │   └── entity-filter.ts
-│   │   │
-│   │   └── resolvers/           # リゾルバー
+│   │   └── types/               # TypeScript型定義
 │   │       ├── index.ts
-│   │       ├── query.ts         # ルートクエリ
-│   │       ├── item.resolver.ts
-│   │       ├── block.resolver.ts
-│   │       ├── recipe.resolver.ts
-│   │       ├── entity.resolver.ts
-│   │       └── search.resolver.ts
+│   │       ├── version.ts
+│   │       ├── item.ts
+│   │       ├── block.ts
+│   │       ├── recipe.ts
+│   │       ├── entity.ts
+│   │       ├── enchantment.ts
+│   │       ├── effect.ts
+│   │       ├── biome.ts
+│   │       └── tag.ts
+│   │
+│   ├── rest/                    # RESTful API
+│   │   ├── index.ts             # RESTルート統合
+│   │   ├── assets.ts            # 静的アセットAPI
+│   │   ├── versions.ts          # バージョンAPI
+│   │   └── health.ts            # ヘルスチェック
 │   │
 │   ├── services/                # ビジネスロジック
 │   │   ├── index.ts
@@ -52,78 +44,56 @@ minecraft-api/
 │   │   ├── entity.service.ts
 │   │   ├── enchantment.service.ts
 │   │   ├── biome.service.ts
+│   │   ├── asset.service.ts
 │   │   └── search.service.ts
 │   │
 │   ├── data/                    # データアクセス層
 │   │   ├── index.ts
-│   │   ├── loader.ts            # データローダー（DataLoader）
-│   │   ├── cache.ts             # キャッシュ管理
 │   │   ├── kv.ts                # Cloudflare KVアクセス
 │   │   └── r2.ts                # Cloudflare R2アクセス
 │   │
-│   ├── routes/                  # Honoルート
-│   │   ├── index.ts
-│   │   ├── graphql.ts           # /graphql エンドポイント
-│   │   ├── assets.ts            # /assets 静的アセット
-│   │   └── health.ts            # /health ヘルスチェック
-│   │
 │   ├── middleware/              # ミドルウェア
 │   │   ├── index.ts
-│   │   ├── cors.ts
-│   │   ├── rate-limit.ts
-│   │   ├── cache.ts
-│   │   └── error-handler.ts
+│   │   ├── auth.ts              # 認証（APIトークン検証）
+│   │   ├── rate-limit.ts        # レート制限
+│   │   ├── cors.ts              # CORS
+│   │   ├── cache.ts             # キャッシュヘッダー
+│   │   └── error-handler.ts     # エラーハンドリング
 │   │
-│   ├── types/                   # TypeScript型定義
+│   ├── types/                   # 共通型定義
 │   │   ├── index.ts
-│   │   ├── minecraft.ts         # Minecraftデータ型
 │   │   ├── env.ts               # 環境変数型
-│   │   └── context.ts           # コンテキスト型
+│   │   └── errors.ts            # エラー型
 │   │
 │   └── utils/                   # ユーティリティ
 │       ├── index.ts
-│       ├── id.ts                # ID変換
+│       ├── id.ts                # ID正規化
 │       ├── pagination.ts        # ページネーション
 │       └── validation.ts        # バリデーション
 │
-├── data/                        # 静的データ（ビルド時に生成）
-│   ├── versions.json
-│   └── {version}/
-│       ├── items.json
-│       ├── blocks.json
-│       ├── recipes.json
-│       ├── entities.json
-│       ├── enchantments.json
-│       ├── effects.json
-│       ├── biomes.json
-│       ├── tags/
-│       │   ├── blocks.json
-│       │   ├── items.json
-│       │   └── entities.json
-│       └── lang/
-│           ├── en_us.json
-│           └── ja_jp.json
+├── scripts/                     # データ生成スクリプト
+│   ├── extract-jar.ts           # JAR抽出
+│   ├── process-items.ts         # アイテムデータ処理
+│   ├── process-blocks.ts        # ブロックデータ処理
+│   ├── process-recipes.ts       # レシピデータ処理
+│   ├── process-entities.ts      # エンティティデータ処理
+│   ├── process-loot-tables.ts   # ルートテーブル処理
+│   ├── upload-kv.ts             # KVアップロード
+│   ├── upload-r2.ts             # R2アップロード
+│   └── sync-version.ts          # バージョン同期
 │
-├── scripts/                     # ビルド・データ生成スクリプト
-│   ├── extract-data.ts          # Minecraft JARからデータ抽出
-│   ├── generate-types.ts        # 型生成
-│   ├── upload-assets.ts         # R2へのアセットアップロード
-│   └── sync-versions.ts         # バージョン同期
-│
-├── tests/                       # テスト
+├── tests/
 │   ├── unit/
 │   │   ├── services/
 │   │   └── utils/
-│   ├── integration/
-│   │   ├── graphql/
-│   │   └── routes/
-│   └── fixtures/
-│       └── data/
+│   └── integration/
+│       ├── graphql/
+│       └── rest/
 │
 ├── wrangler.toml                # Cloudflare Workers設定
 ├── tsconfig.json
 ├── package.json
-├── biome.json                   # Biome設定
+├── biome.json
 └── vitest.config.ts
 ```
 
@@ -131,312 +101,480 @@ minecraft-api/
 
 ## 2. コンポーネント設計
 
-### 2.1 Honoアプリケーション
+### 2.1 エントリーポイント
 
 ```typescript
-// src/app.ts
+// src/index.ts
+import { app } from '@getcronit/pylon'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 
-import { graphqlRoutes } from './routes/graphql'
-import { assetRoutes } from './routes/assets'
-import { healthRoutes } from './routes/health'
-import { rateLimiter } from './middleware/rate-limit'
+import { authMiddleware } from './middleware/auth'
+import { rateLimitMiddleware } from './middleware/rate-limit'
 import { errorHandler } from './middleware/error-handler'
+import { restRoutes } from './rest'
+import { graphql } from './graphql'
 
 import type { Env } from './types/env'
 
-const app = new Hono<{ Bindings: Env }>()
+// Honoアプリを取得（Pylonが内部で使用）
+const honoApp = app.honoApp as Hono<{ Bindings: Env }>
 
 // グローバルミドルウェア
-app.use('*', logger())
-app.use('*', secureHeaders())
-app.use('*', cors({
-  origin: ['https://example.com'],
+honoApp.use('*', secureHeaders())
+honoApp.use('*', cors({
+  origin: (origin, c) => {
+    // 動的オリジン検証
+    return origin
+  },
   allowMethods: ['GET', 'POST', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400,
 }))
-app.use('*', rateLimiter())
-app.onError(errorHandler)
+honoApp.onError(errorHandler)
 
-// ルート
-app.route('/graphql', graphqlRoutes)
-app.route('/assets', assetRoutes)
-app.route('/health', healthRoutes)
+// ヘルスチェック（認証不要）
+honoApp.get('/health', (c) => c.json({ status: 'ok' }))
 
+// 認証・レート制限が必要なルート
+honoApp.use('/graphql/*', authMiddleware)
+honoApp.use('/graphql/*', rateLimitMiddleware)
+honoApp.use('/v1/*', authMiddleware)
+honoApp.use('/v1/*', rateLimitMiddleware)
+
+// RESTルート
+honoApp.route('/v1', restRoutes)
+
+// GraphQL（Pylonが自動設定）
+export { graphql }
 export default app
 ```
 
-### 2.2 GraphQL Yoga + Pothos 設定
+### 2.2 Pylon GraphQL サービス
 
 ```typescript
 // src/graphql/index.ts
-import { createYoga } from 'graphql-yoga'
-import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
-import { useDepthLimit } from '@envelop/depth-limit'
-import { useComplexityLimit } from '@envelop/complexity'
+import { app, ServiceError } from '@getcronit/pylon'
+import { getContext } from './context'
+import * as resolvers from './resolvers'
+import type {
+  Version,
+  Item,
+  Block,
+  Recipe,
+  Entity,
+  Enchantment,
+  ItemFilter,
+  BlockFilter,
+  RecipeFilter,
+  EntityFilter,
+  Pagination,
+  ItemConnection,
+  BlockConnection,
+  RecipeConnection,
+  EntityConnection,
+  SearchResult,
+  SearchType,
+} from './types'
 
-import { schema } from './schema'
-import { createContext } from './context'
-
-import type { Env } from '../types/env'
-
-export function createGraphQLHandler(env: Env) {
-  return createYoga({
-    schema,
-    context: (ctx) => createContext(ctx, env),
-    plugins: [
-      useDepthLimit({ maxDepth: 10 }),
-      useComplexityLimit({
-        maxComplexity: 500,
-        estimators: [
-          // カスタム複雑度推定
-        ],
-      }),
-      useResponseCache({
-        session: () => null, // 公開API
-        ttl: 1000 * 60 * 5,  // 5分
-        invalidateViaMutation: false,
-      }),
-    ],
-    graphiql: {
-      title: 'Minecraft API',
+export const graphql = {
+  Query: {
+    // バージョン
+    versions: async (): Promise<Version[]> => {
+      const ctx = getContext()
+      return resolvers.version.getAll(ctx)
     },
-  })
-}
-```
 
-```typescript
-// src/graphql/schema.ts
-import SchemaBuilder from '@pothos/core'
-import RelayPlugin from '@pothos/plugin-relay'
-import DataloaderPlugin from '@pothos/plugin-dataloader'
-import ValidationPlugin from '@pothos/plugin-validation'
+    version: async (id: string): Promise<Version | null> => {
+      const ctx = getContext()
+      return resolvers.version.getById(ctx, id)
+    },
 
-import type { Context } from './context'
+    latestVersion: async (): Promise<Version> => {
+      const ctx = getContext()
+      return resolvers.version.getLatest(ctx)
+    },
 
-export const builder = new SchemaBuilder<{
-  Context: Context
-  Scalars: {
-    ID: { Input: string; Output: string }
-  }
-}>({
-  plugins: [RelayPlugin, DataloaderPlugin, ValidationPlugin],
-  relay: {
-    clientMutationId: 'omit',
-    cursorType: 'String',
+    // アイテム
+    items: async (
+      version: string,
+      filter?: ItemFilter,
+      pagination?: Pagination
+    ): Promise<ItemConnection> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.item.getAll(ctx, version, filter, pagination)
+    },
+
+    item: async (version: string, id: string): Promise<Item | null> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.item.getById(ctx, version, id)
+    },
+
+    // ブロック
+    blocks: async (
+      version: string,
+      filter?: BlockFilter,
+      pagination?: Pagination
+    ): Promise<BlockConnection> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.block.getAll(ctx, version, filter, pagination)
+    },
+
+    block: async (version: string, id: string): Promise<Block | null> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.block.getById(ctx, version, id)
+    },
+
+    // レシピ
+    recipes: async (
+      version: string,
+      filter?: RecipeFilter,
+      pagination?: Pagination
+    ): Promise<RecipeConnection> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.recipe.getAll(ctx, version, filter, pagination)
+    },
+
+    // エンティティ
+    entities: async (
+      version: string,
+      filter?: EntityFilter,
+      pagination?: Pagination
+    ): Promise<EntityConnection> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.entity.getAll(ctx, version, filter, pagination)
+    },
+
+    entity: async (version: string, id: string): Promise<Entity | null> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.entity.getById(ctx, version, id)
+    },
+
+    // エンチャント
+    enchantments: async (version: string): Promise<Enchantment[]> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.enchantment.getAll(ctx, version)
+    },
+
+    enchantment: async (version: string, id: string): Promise<Enchantment | null> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.enchantment.getById(ctx, version, id)
+    },
+
+    // 検索
+    search: async (
+      version: string,
+      query: string,
+      types?: SearchType[]
+    ): Promise<SearchResult> => {
+      const ctx = getContext()
+      validateVersion(ctx, version)
+      return resolvers.search.search(ctx, version, query, types)
+    },
   },
-})
+}
 
-// 型定義をインポート
-import './types'
-
-export const schema = builder.toSchema()
+function validateVersion(ctx: any, version: string): void {
+  if (!ctx.versions.includes(version)) {
+    throw new ServiceError(`Invalid version: ${version}`, {
+      code: 'INVALID_VERSION',
+      statusCode: 400,
+    })
+  }
+}
 ```
 
+### 2.3 REST API ルート
+
 ```typescript
-// src/graphql/context.ts
-import type { YogaInitialContext } from 'graphql-yoga'
-import { createDataLoaders } from '../data/loader'
-import { ItemService } from '../services/item.service'
-import { BlockService } from '../services/block.service'
-import { RecipeService } from '../services/recipe.service'
-import { EntityService } from '../services/entity.service'
+// src/rest/index.ts
+import { Hono } from 'hono'
+import { assetsRoutes } from './assets'
+import { versionsRoutes } from './versions'
 
 import type { Env } from '../types/env'
 
-export interface Context {
-  env: Env
-  loaders: ReturnType<typeof createDataLoaders>
-  services: {
-    item: ItemService
-    block: BlockService
-    recipe: RecipeService
-    entity: EntityService
-  }
-}
+export const restRoutes = new Hono<{ Bindings: Env }>()
 
-export function createContext(
-  ctx: YogaInitialContext,
-  env: Env
-): Context {
-  const loaders = createDataLoaders(env)
-
-  return {
-    env,
-    loaders,
-    services: {
-      item: new ItemService(env, loaders),
-      block: new BlockService(env, loaders),
-      recipe: new RecipeService(env, loaders),
-      entity: new EntityService(env, loaders),
-    },
-  }
-}
+restRoutes.route('/assets', assetsRoutes)
+restRoutes.route('/versions', versionsRoutes)
 ```
-
-### 2.3 型定義（Pothos）
 
 ```typescript
-// src/graphql/types/item.ts
-import { builder } from '../schema'
+// src/rest/assets.ts
+import { Hono } from 'hono'
+import { cache } from 'hono/cache'
+import { AssetService } from '../services/asset.service'
+import { NotFoundError } from '../types/errors'
 
-// Enum定義
-export const RarityEnum = builder.enumType('Rarity', {
-  values: ['COMMON', 'UNCOMMON', 'RARE', 'EPIC'] as const,
+import type { Env } from '../types/env'
+
+export const assetsRoutes = new Hono<{ Bindings: Env }>()
+
+// 静的アセットのキャッシュ設定
+assetsRoutes.use('/*', async (c, next) => {
+  await next()
+
+  // 成功時のみキャッシュヘッダー設定
+  if (c.res.status === 200) {
+    const path = c.req.path
+
+    // 言語ファイルは短めのキャッシュ
+    if (path.includes('/lang/')) {
+      c.header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600')
+    } else {
+      // テクスチャ、モデル、サウンドは長期キャッシュ
+      c.header('Cache-Control', 'public, max-age=31536000, immutable')
+    }
+  }
 })
 
-export const EquipmentSlotEnum = builder.enumType('EquipmentSlot', {
-  values: ['HEAD', 'CHEST', 'LEGS', 'FEET', 'MAINHAND', 'OFFHAND'] as const,
+// GET /v1/assets/:version/*path
+assetsRoutes.get('/:version/*', async (c) => {
+  const version = c.req.param('version')
+  const path = c.req.param('*') || ''
+
+  const assetService = new AssetService(c.env)
+
+  // バージョン検証
+  const isValidVersion = await assetService.isValidVersion(version)
+  if (!isValidVersion) {
+    throw new NotFoundError('version', version)
+  }
+
+  // アセット取得
+  const asset = await assetService.getAsset(version, path)
+  if (!asset) {
+    throw new NotFoundError('asset', `${version}/${path}`)
+  }
+
+  // Content-Type設定
+  const contentType = getContentType(path)
+  c.header('Content-Type', contentType)
+  c.header('X-Version', version)
+  c.header('ETag', `"${asset.etag}"`)
+
+  return c.body(asset.body)
 })
 
-// オブジェクト型定義
-export const EquipmentDataType = builder.objectType('EquipmentData', {
-  fields: (t) => ({
-    slot: t.field({ type: EquipmentSlotEnum, resolve: (parent) => parent.slot }),
-    armor: t.int({ nullable: true, resolve: (parent) => parent.armor }),
-    armorToughness: t.float({ nullable: true, resolve: (parent) => parent.armorToughness }),
-    knockbackResistance: t.float({ nullable: true, resolve: (parent) => parent.knockbackResistance }),
-    attackDamage: t.float({ nullable: true, resolve: (parent) => parent.attackDamage }),
-    attackSpeed: t.float({ nullable: true, resolve: (parent) => parent.attackSpeed }),
-  }),
+function getContentType(path: string): string {
+  if (path.endsWith('.png')) return 'image/png'
+  if (path.endsWith('.json')) return 'application/json'
+  if (path.endsWith('.ogg')) return 'audio/ogg'
+  if (path.endsWith('.mcmeta')) return 'application/json'
+  return 'application/octet-stream'
+}
+```
+
+```typescript
+// src/rest/versions.ts
+import { Hono } from 'hono'
+import { VersionService } from '../services/version.service'
+
+import type { Env } from '../types/env'
+
+export const versionsRoutes = new Hono<{ Bindings: Env }>()
+
+// GET /v1/versions
+versionsRoutes.get('/', async (c) => {
+  const versionService = new VersionService(c.env)
+  const data = await versionService.getAll()
+
+  c.header('Cache-Control', 'public, max-age=3600')
+  return c.json(data)
 })
 
-export const FoodDataType = builder.objectType('FoodData', {
-  fields: (t) => ({
-    nutrition: t.int({ resolve: (parent) => parent.nutrition }),
-    saturation: t.float({ resolve: (parent) => parent.saturation }),
-    canAlwaysEat: t.boolean({ resolve: (parent) => parent.canAlwaysEat }),
-    // effects は別途定義
-  }),
+// GET /v1/versions/latest
+versionsRoutes.get('/latest', async (c) => {
+  const versionService = new VersionService(c.env)
+  const latest = await versionService.getLatest()
+
+  c.header('Cache-Control', 'public, max-age=3600')
+  return c.json(latest)
 })
 
-// Item Node（Relay Connection対応）
-export const ItemType = builder.node('Item', {
-  id: { resolve: (item) => item.id },
-  fields: (t) => ({
-    name: t.exposeString('name'),
-    displayName: t.string({
-      args: {
-        lang: t.arg.string({ defaultValue: 'en_us' }),
-      },
-      resolve: async (item, args, ctx) => {
-        return ctx.services.item.getDisplayName(item.id, args.lang)
-      },
-    }),
-    stackSize: t.exposeInt('stackSize'),
-    durability: t.int({ nullable: true, resolve: (item) => item.durability }),
-    fireResistant: t.exposeBoolean('fireResistant'),
-    rarity: t.field({ type: RarityEnum, resolve: (item) => item.rarity }),
+// GET /v1/versions/:id
+versionsRoutes.get('/:id', async (c) => {
+  const id = c.req.param('id')
+  const versionService = new VersionService(c.env)
+  const version = await versionService.getById(id)
 
-    // 装備データ
-    equipment: t.field({
-      type: EquipmentDataType,
-      nullable: true,
-      resolve: (item) => item.equipment,
-    }),
+  if (!version) {
+    return c.json({ error: { code: 'NOT_FOUND', message: `Version not found: ${id}` } }, 404)
+  }
 
-    // 食料データ
-    food: t.field({
-      type: FoodDataType,
-      nullable: true,
-      resolve: (item) => item.food,
-    }),
-
-    // 関連: レシピ
-    recipes: t.field({
-      type: [RecipeInterface],
-      resolve: async (item, _args, ctx) => {
-        return ctx.services.recipe.findByResult(item.id)
-      },
-    }),
-
-    // 関連: このアイテムを使うレシピ
-    usedInRecipes: t.field({
-      type: [RecipeInterface],
-      resolve: async (item, _args, ctx) => {
-        return ctx.services.recipe.findByIngredient(item.id)
-      },
-    }),
-
-    // 関連: ブロック
-    block: t.field({
-      type: BlockType,
-      nullable: true,
-      resolve: async (item, _args, ctx) => {
-        return ctx.loaders.block.load(item.id)
-      },
-    }),
-
-    // 関連: エンチャント
-    enchantments: t.field({
-      type: [EnchantmentType],
-      resolve: async (item, _args, ctx) => {
-        return ctx.services.enchantment.findApplicableTo(item.id)
-      },
-    }),
-
-    // 関連: タグ
-    tags: t.field({
-      type: [TagType],
-      resolve: async (item, _args, ctx) => {
-        return ctx.services.tag.findByItem(item.id)
-      },
-    }),
-
-    // アセット
-    texture: t.string({
-      resolve: (item, _args, ctx) => {
-        return `/assets/${ctx.version}/textures/item/${item.name}.png`
-      },
-    }),
-    model: t.string({
-      nullable: true,
-      resolve: (item, _args, ctx) => {
-        return `/assets/${ctx.version}/models/item/${item.name}.json`
-      },
-    }),
-  }),
-})
-
-// Item Connection
-export const ItemConnection = builder.connectionType(ItemType, {
-  name: 'ItemConnection',
+  c.header('Cache-Control', 'public, max-age=3600')
+  return c.json(version)
 })
 ```
 
-### 2.4 サービス層
+### 2.4 認証ミドルウェア
+
+```typescript
+// src/middleware/auth.ts
+import type { Context, Next } from 'hono'
+import { HTTPException } from 'hono/http-exception'
+import type { Env } from '../types/env'
+
+interface TokenData {
+  id: string
+  plan: 'free' | 'basic' | 'pro' | 'enterprise'
+  createdAt: string
+  expiresAt: string
+}
+
+export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+  const authHeader = c.req.header('Authorization')
+
+  if (!authHeader) {
+    throw new HTTPException(401, {
+      message: 'Authorization header is required',
+    })
+  }
+
+  if (!authHeader.startsWith('Bearer ')) {
+    throw new HTTPException(401, {
+      message: 'Invalid authorization format. Use: Bearer <token>',
+    })
+  }
+
+  const token = authHeader.slice(7)
+
+  // トークン形式チェック
+  if (!token.startsWith('mcapi_')) {
+    throw new HTTPException(401, {
+      message: 'Invalid token format',
+    })
+  }
+
+  // KVからトークン情報取得
+  const tokenData = await c.env.KV.get<TokenData>(`token:${token}`, 'json')
+
+  if (!tokenData) {
+    throw new HTTPException(401, {
+      message: 'Invalid or expired token',
+    })
+  }
+
+  // 有効期限チェック
+  if (new Date(tokenData.expiresAt) < new Date()) {
+    throw new HTTPException(401, {
+      message: 'Token has expired',
+    })
+  }
+
+  // コンテキストにトークン情報を保存
+  c.set('token', tokenData)
+  c.set('tokenId', tokenData.id)
+  c.set('plan', tokenData.plan)
+
+  await next()
+}
+```
+
+### 2.5 レート制限ミドルウェア
+
+```typescript
+// src/middleware/rate-limit.ts
+import type { Context, Next } from 'hono'
+import { HTTPException } from 'hono/http-exception'
+import type { Env } from '../types/env'
+
+interface RateLimitConfig {
+  requestsPerMinute: number
+  requestsPerDay: number
+}
+
+const PLAN_LIMITS: Record<string, RateLimitConfig> = {
+  free: { requestsPerMinute: 60, requestsPerDay: 10000 },
+  basic: { requestsPerMinute: 300, requestsPerDay: 100000 },
+  pro: { requestsPerMinute: 1000, requestsPerDay: 1000000 },
+  enterprise: { requestsPerMinute: 10000, requestsPerDay: 10000000 },
+}
+
+export async function rateLimitMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+  const tokenId = c.get('tokenId') as string
+  const plan = c.get('plan') as string
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free
+
+  const now = Date.now()
+  const minuteKey = `ratelimit:minute:${tokenId}:${Math.floor(now / 60000)}`
+  const dayKey = `ratelimit:day:${tokenId}:${Math.floor(now / 86400000)}`
+
+  // 現在のカウント取得
+  const [minuteCount, dayCount] = await Promise.all([
+    c.env.KV.get<number>(minuteKey, 'json') || 0,
+    c.env.KV.get<number>(dayKey, 'json') || 0,
+  ])
+
+  // 制限チェック
+  if (minuteCount >= limits.requestsPerMinute) {
+    const resetTime = Math.ceil((Math.floor(now / 60000) + 1) * 60000 / 1000)
+    c.header('X-RateLimit-Limit', String(limits.requestsPerMinute))
+    c.header('X-RateLimit-Remaining', '0')
+    c.header('X-RateLimit-Reset', String(resetTime))
+    c.header('Retry-After', String(Math.ceil((resetTime * 1000 - now) / 1000)))
+
+    throw new HTTPException(429, {
+      message: 'Rate limit exceeded. Please wait before making another request.',
+    })
+  }
+
+  if (dayCount >= limits.requestsPerDay) {
+    throw new HTTPException(429, {
+      message: 'Daily rate limit exceeded. Please try again tomorrow.',
+    })
+  }
+
+  // カウント更新（非同期）
+  c.executionCtx.waitUntil(
+    Promise.all([
+      c.env.KV.put(minuteKey, JSON.stringify(minuteCount + 1), { expirationTtl: 120 }),
+      c.env.KV.put(dayKey, JSON.stringify(dayCount + 1), { expirationTtl: 172800 }),
+    ])
+  )
+
+  // レート制限ヘッダー設定
+  c.header('X-RateLimit-Limit', String(limits.requestsPerMinute))
+  c.header('X-RateLimit-Remaining', String(limits.requestsPerMinute - minuteCount - 1))
+  c.header('X-RateLimit-Reset', String(Math.ceil((Math.floor(now / 60000) + 1) * 60000 / 1000)))
+
+  await next()
+}
+```
+
+### 2.6 サービス層
 
 ```typescript
 // src/services/item.service.ts
 import type { Env } from '../types/env'
-import type { DataLoaders } from '../data/loader'
-import type { Item, ItemFilter } from '../types/minecraft'
+import type { Item, ItemFilter } from '../graphql/types'
 
 export class ItemService {
-  constructor(
-    private env: Env,
-    private loaders: DataLoaders
-  ) {}
+  constructor(private env: Env) {}
 
   async getById(version: string, id: string): Promise<Item | null> {
     const normalizedId = this.normalizeId(id)
-    return this.loaders.item(version).load(normalizedId)
+    const items = await this.getAllRaw(version)
+    return items.find(item => item.id === normalizedId) || null
   }
 
   async getAll(version: string): Promise<Item[]> {
-    const data = await this.env.KV.get(`items:${version}`, 'json')
-    return data as Item[] ?? []
+    return this.getAllRaw(version)
   }
 
-  async filter(
-    version: string,
-    filter: ItemFilter
-  ): Promise<Item[]> {
-    let items = await this.getAll(version)
+  async filter(version: string, filter: ItemFilter): Promise<Item[]> {
+    let items = await this.getAllRaw(version)
 
     if (filter.search) {
       const searchLower = filter.search.toLowerCase()
@@ -446,7 +584,7 @@ export class ItemService {
       )
     }
 
-    if (filter.rarity) {
+    if (filter.rarity !== undefined) {
       items = items.filter(item => item.rarity === filter.rarity)
     }
 
@@ -457,43 +595,56 @@ export class ItemService {
     }
 
     if (filter.hasRecipe !== undefined) {
-      // レシピサービスと連携
-      const recipeLookup = await this.getRecipeLookup(version)
+      const recipeService = new RecipeService(this.env)
+      const recipeResults = await recipeService.getAllRaw(version)
+      const resultItemIds = new Set(recipeResults.map(r => r.result.item))
+
       items = items.filter(item =>
-        filter.hasRecipe ? recipeLookup.has(item.id) : !recipeLookup.has(item.id)
+        filter.hasRecipe ? resultItemIds.has(item.id) : !resultItemIds.has(item.id)
+      )
+    }
+
+    if (filter.hasDurability !== undefined) {
+      items = items.filter(item =>
+        filter.hasDurability ? item.durability !== null : item.durability === null
       )
     }
 
     if (filter.isFood !== undefined) {
       items = items.filter(item =>
-        filter.isFood ? item.food !== undefined : item.food === undefined
+        filter.isFood ? item.food !== null : item.food === null
       )
     }
 
     if (filter.isEquipment !== undefined) {
       items = items.filter(item =>
-        filter.isEquipment ? item.equipment !== undefined : item.equipment === undefined
+        filter.isEquipment ? item.equipment !== null : item.equipment === null
       )
     }
 
-    if (filter.tags && filter.tags.length > 0) {
-      const tagLookup = await this.getTagLookup(version)
+    if (filter.isTool !== undefined) {
       items = items.filter(item =>
-        filter.tags!.some(tag => tagLookup.get(item.id)?.includes(tag))
+        filter.isTool ? item.tool !== null : item.tool === null
       )
     }
 
     return items
   }
 
-  async getDisplayName(
-    version: string,
-    id: string,
-    lang: string
-  ): Promise<string> {
-    const langData = await this.loaders.lang(version).load(lang)
+  async getDisplayName(version: string, id: string, lang: string): Promise<string> {
+    const langData = await this.env.KV.get<Record<string, string>>(
+      `lang:${version}:${lang}`,
+      'json'
+    )
+    if (!langData) return id
+
     const key = `item.minecraft.${this.stripNamespace(id)}`
-    return langData[key] ?? id
+    return langData[key] || id
+  }
+
+  private async getAllRaw(version: string): Promise<Item[]> {
+    const data = await this.env.KV.get<Item[]>(`items:${version}`, 'json')
+    return data || []
   }
 
   private normalizeId(id: string): string {
@@ -504,228 +655,47 @@ export class ItemService {
   private stripNamespace(id: string): string {
     return id.replace('minecraft:', '')
   }
-
-  private async getRecipeLookup(version: string): Promise<Set<string>> {
-    // キャッシュまたは計算
-    const recipes = await this.env.KV.get(`recipes:${version}`, 'json')
-    const resultIds = new Set<string>()
-    for (const recipe of recipes as any[]) {
-      resultIds.add(recipe.result.item)
-    }
-    return resultIds
-  }
-
-  private async getTagLookup(version: string): Promise<Map<string, string[]>> {
-    const tags = await this.env.KV.get(`tags:items:${version}`, 'json')
-    const lookup = new Map<string, string[]>()
-    for (const tag of tags as any[]) {
-      for (const entry of tag.entries) {
-        const existing = lookup.get(entry) ?? []
-        existing.push(tag.id)
-        lookup.set(entry, existing)
-      }
-    }
-    return lookup
-  }
 }
 ```
-
-### 2.5 DataLoader
 
 ```typescript
-// src/data/loader.ts
-import DataLoader from 'dataloader'
+// src/services/asset.service.ts
 import type { Env } from '../types/env'
-import type { Item, Block, Entity, Recipe } from '../types/minecraft'
 
-export function createDataLoaders(env: Env) {
-  // バージョン別キャッシュ
-  const itemLoaders = new Map<string, DataLoader<string, Item | null>>()
-  const blockLoaders = new Map<string, DataLoader<string, Block | null>>()
-  const entityLoaders = new Map<string, DataLoader<string, Entity | null>>()
-  const langLoaders = new Map<string, DataLoader<string, Record<string, string>>>()
-
-  const getItemLoader = (version: string) => {
-    if (!itemLoaders.has(version)) {
-      itemLoaders.set(version, new DataLoader(async (ids) => {
-        const allItems = await env.KV.get(`items:${version}`, 'json') as Item[]
-        const itemMap = new Map(allItems.map(item => [item.id, item]))
-        return ids.map(id => itemMap.get(id) ?? null)
-      }))
-    }
-    return itemLoaders.get(version)!
-  }
-
-  const getBlockLoader = (version: string) => {
-    if (!blockLoaders.has(version)) {
-      blockLoaders.set(version, new DataLoader(async (ids) => {
-        const allBlocks = await env.KV.get(`blocks:${version}`, 'json') as Block[]
-        const blockMap = new Map(allBlocks.map(block => [block.id, block]))
-        return ids.map(id => blockMap.get(id) ?? null)
-      }))
-    }
-    return blockLoaders.get(version)!
-  }
-
-  const getEntityLoader = (version: string) => {
-    if (!entityLoaders.has(version)) {
-      entityLoaders.set(version, new DataLoader(async (ids) => {
-        const allEntities = await env.KV.get(`entities:${version}`, 'json') as Entity[]
-        const entityMap = new Map(allEntities.map(entity => [entity.id, entity]))
-        return ids.map(id => entityMap.get(id) ?? null)
-      }))
-    }
-    return entityLoaders.get(version)!
-  }
-
-  const getLangLoader = (version: string) => {
-    if (!langLoaders.has(version)) {
-      langLoaders.set(version, new DataLoader(async (langs) => {
-        return Promise.all(langs.map(async (lang) => {
-          const data = await env.KV.get(`lang:${version}:${lang}`, 'json')
-          return (data as Record<string, string>) ?? {}
-        }))
-      }))
-    }
-    return langLoaders.get(version)!
-  }
-
-  return {
-    item: getItemLoader,
-    block: getBlockLoader,
-    entity: getEntityLoader,
-    lang: getLangLoader,
-  }
+interface Asset {
+  body: ReadableStream | ArrayBuffer
+  etag: string
 }
 
-export type DataLoaders = ReturnType<typeof createDataLoaders>
+export class AssetService {
+  constructor(private env: Env) {}
+
+  async isValidVersion(version: string): Promise<boolean> {
+    const versions = await this.env.KV.get<string[]>('versions:list', 'json')
+    return versions?.includes(version) || false
+  }
+
+  async getAsset(version: string, path: string): Promise<Asset | null> {
+    const key = `${version}/${path}`
+    const object = await this.env.ASSETS.get(key)
+
+    if (!object) {
+      return null
+    }
+
+    return {
+      body: object.body,
+      etag: object.etag,
+    }
+  }
+}
 ```
 
 ---
 
-## 3. データフロー
+## 3. 環境変数・設定
 
-### 3.1 GraphQLリクエスト処理
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        GraphQL Request                           │
-│  POST /graphql                                                   │
-│  { query: "{ item(version: \"1.21\", id: \"diamond\") {...} }" } │
-└──────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                         Middleware                               │
-│  1. CORS Check                                                   │
-│  2. Rate Limit Check                                             │
-│  3. Request Logging                                              │
-└──────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                       GraphQL Yoga                               │
-│  1. Parse Query                                                  │
-│  2. Validate (Depth Limit, Complexity Limit)                     │
-│  3. Check Response Cache                                         │
-└──────────────────────────────────────────────────────────────────┘
-                                │
-                    ┌───────────┴───────────┐
-                    │ Cache Hit?            │
-                    └───────────┬───────────┘
-                          │           │
-                        Yes          No
-                          │           │
-                          ▼           ▼
-              ┌─────────────────┐  ┌─────────────────────────────┐
-              │ Return Cached   │  │     Create Context          │
-              │ Response        │  │  - Initialize DataLoaders   │
-              └─────────────────┘  │  - Initialize Services      │
-                                   └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │      Execute Resolvers      │
-                                   │  1. Root Query Resolver     │
-                                   │  2. Field Resolvers         │
-                                   │  3. DataLoader Batching     │
-                                   └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │     Data Access Layer       │
-                                   │  - Cloudflare KV Get        │
-                                   │  - Batch by DataLoader      │
-                                   └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │    Format Response          │
-                                   │  - Build GraphQL Response   │
-                                   │  - Cache Response           │
-                                   └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │     Return Response         │
-                                   └─────────────────────────────┘
-```
-
-### 3.2 静的アセットリクエスト処理
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                      Asset Request                               │
-│  GET /assets/1.21/textures/item/diamond.png                      │
-└──────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                      Cloudflare CDN                              │
-│  1. Check Edge Cache                                             │
-└──────────────────────────────────────────────────────────────────┘
-                                │
-                    ┌───────────┴───────────┐
-                    │ Cache Hit?            │
-                    └───────────┬───────────┘
-                          │           │
-                        Yes          No
-                          │           │
-                          ▼           ▼
-              ┌─────────────────┐  ┌─────────────────────────────┐
-              │ Return Cached   │  │   Cloudflare Workers        │
-              │ Asset           │  │   Route: /assets/*          │
-              └─────────────────┘  └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │     Parse Path              │
-                                   │  - Version: 1.21            │
-                                   │  - Type: textures/item      │
-                                   │  - Name: diamond.png        │
-                                   └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │     Cloudflare R2           │
-                                   │  GET 1.21/textures/item/    │
-                                   │      diamond.png            │
-                                   └─────────────────────────────┘
-                                                │
-                                                ▼
-                                   ┌─────────────────────────────┐
-                                   │  Return with Cache Headers  │
-                                   │  Cache-Control: public,     │
-                                   │    max-age=31536000,        │
-                                   │    immutable                │
-                                   └─────────────────────────────┘
-```
-
----
-
-## 4. 環境変数・設定
-
-### 4.1 環境変数型定義
+### 3.1 環境変数型定義
 
 ```typescript
 // src/types/env.ts
@@ -738,29 +708,20 @@ export interface Env {
 
   // 設定
   ENVIRONMENT: 'development' | 'staging' | 'production'
-
-  // レート制限
-  RATE_LIMIT_REQUESTS: number
-  RATE_LIMIT_WINDOW: number
-
-  // CORS
-  ALLOWED_ORIGINS: string
 }
 ```
 
-### 4.2 Wrangler設定
+### 3.2 Wrangler 設定
 
 ```toml
 # wrangler.toml
 name = "minecraft-api"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "production"
-RATE_LIMIT_REQUESTS = 60
-RATE_LIMIT_WINDOW = 60
-ALLOWED_ORIGINS = "https://example.com"
 
 [[kv_namespaces]]
 binding = "KV"
@@ -775,107 +736,205 @@ preview_bucket_name = "minecraft-api-assets-preview"
 [build]
 command = "pnpm build"
 
-[dev]
-port = 8787
-local_protocol = "http"
+[observability]
+enabled = true
 ```
 
 ---
 
-## 5. エラーハンドリング
+## 4. エラーハンドリング
 
-### 5.1 カスタムエラークラス
+### 4.1 カスタムエラー
 
 ```typescript
-// src/utils/errors.ts
-export class APIError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public statusCode: number = 400,
-    public extensions?: Record<string, unknown>
-  ) {
-    super(message)
-    this.name = 'APIError'
+// src/types/errors.ts
+import { ServiceError } from '@getcronit/pylon'
+
+export class NotFoundError extends ServiceError {
+  constructor(resourceType: string, resourceId: string) {
+    super(`${resourceType} not found: ${resourceId}`, {
+      code: 'NOT_FOUND',
+      statusCode: 404,
+    })
   }
 }
 
-export class NotFoundError extends APIError {
-  constructor(
-    resourceType: string,
-    resourceId: string,
-    version?: string
-  ) {
-    super(
-      `${resourceType} not found: ${resourceId}`,
-      'NOT_FOUND',
-      404,
-      { resourceType, resourceId, version }
-    )
-  }
-}
-
-export class InvalidVersionError extends APIError {
+export class InvalidVersionError extends ServiceError {
   constructor(version: string) {
-    super(
-      `Invalid version: ${version}`,
-      'INVALID_VERSION',
-      400,
-      { version }
-    )
+    super(`Invalid version: ${version}`, {
+      code: 'INVALID_VERSION',
+      statusCode: 400,
+    })
   }
 }
 
-export class RateLimitError extends APIError {
+export class RateLimitError extends ServiceError {
   constructor(retryAfter: number) {
-    super(
-      'Rate limit exceeded',
-      'RATE_LIMITED',
-      429,
-      { retryAfter }
-    )
+    super('Rate limit exceeded', {
+      code: 'RATE_LIMITED',
+      statusCode: 429,
+    })
+  }
+}
+
+export class UnauthorizedError extends ServiceError {
+  constructor(message = 'Unauthorized') {
+    super(message, {
+      code: 'UNAUTHORIZED',
+      statusCode: 401,
+    })
   }
 }
 ```
 
-### 5.2 エラーハンドラミドルウェア
+### 4.2 エラーハンドラ
 
 ```typescript
 // src/middleware/error-handler.ts
 import type { ErrorHandler } from 'hono'
-import { APIError } from '../utils/errors'
+import { HTTPException } from 'hono/http-exception'
+import { ServiceError } from '@getcronit/pylon'
 
 export const errorHandler: ErrorHandler = (err, c) => {
   console.error('Error:', err)
 
-  if (err instanceof APIError) {
+  // HTTP例外
+  if (err instanceof HTTPException) {
     return c.json({
       error: {
+        code: getErrorCode(err.status),
         message: err.message,
-        code: err.code,
-        ...err.extensions,
       },
-    }, err.statusCode as any)
+    }, err.status)
   }
 
-  // GraphQLエラーはYogaが処理
-  if (err.name === 'GraphQLError') {
-    throw err
+  // Pylonサービスエラー
+  if (err instanceof ServiceError) {
+    return c.json({
+      error: {
+        code: (err as any).code || 'UNKNOWN_ERROR',
+        message: err.message,
+      },
+    }, (err as any).statusCode || 500)
   }
 
   // 未知のエラー
   return c.json({
     error: {
-      message: 'Internal server error',
       code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
     },
   }, 500)
+}
+
+function getErrorCode(status: number): string {
+  switch (status) {
+    case 400: return 'BAD_REQUEST'
+    case 401: return 'UNAUTHORIZED'
+    case 403: return 'FORBIDDEN'
+    case 404: return 'NOT_FOUND'
+    case 429: return 'RATE_LIMITED'
+    default: return 'INTERNAL_ERROR'
+  }
 }
 ```
 
 ---
 
-## 6. テスト戦略
+## 5. データフロー
+
+### 5.1 GraphQL リクエスト
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  POST /graphql                                                   │
+│  Authorization: Bearer mcapi_xxx                                 │
+│  { query: "{ item(version: \"1.21\", id: \"diamond\") {...} }"  │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     Middleware Stack                             │
+│  1. secureHeaders                                                │
+│  2. cors                                                         │
+│  3. authMiddleware (トークン検証)                                │
+│  4. rateLimitMiddleware (レート制限チェック)                     │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                       Pylon GraphQL                              │
+│  1. クエリパース                                                 │
+│  2. リゾルバ実行                                                 │
+│  3. サービス層呼び出し                                           │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                      Service Layer                               │
+│  ItemService.getById(version, id)                                │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     Cloudflare KV                                │
+│  GET items:1.21 → JSON parse → filter                            │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                      Response                                    │
+│  { "data": { "item": { ... } } }                                 │
+│  X-RateLimit-Remaining: 59                                       │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 静的アセットリクエスト
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  GET /v1/assets/1.21/textures/item/diamond.png                   │
+│  Authorization: Bearer mcapi_xxx                                 │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    Cloudflare CDN Edge                           │
+│  Cache-Key: /v1/assets/1.21/textures/item/diamond.png            │
+└──────────────────────────────────────────────────────────────────┘
+                                │
+                    ┌───────────┴───────────┐
+                    │ Cache Hit?            │
+                    └───────────┬───────────┘
+                          │           │
+                        Yes          No
+                          │           │
+                          ▼           ▼
+              ┌─────────────────┐  ┌─────────────────────────────┐
+              │ Return Cached   │  │   Cloudflare Workers        │
+              │ (immutable)     │  │   1. authMiddleware         │
+              └─────────────────┘  │   2. rateLimitMiddleware    │
+                                   │   3. AssetService.getAsset  │
+                                   └─────────────────────────────┘
+                                                │
+                                                ▼
+                                   ┌─────────────────────────────┐
+                                   │     Cloudflare R2           │
+                                   │  GET 1.21/textures/item/    │
+                                   │      diamond.png            │
+                                   └─────────────────────────────┘
+                                                │
+                                                ▼
+                                   ┌─────────────────────────────┐
+                                   │  Response + Cache Headers   │
+                                   │  Cache-Control: immutable   │
+                                   │  → CDNにキャッシュ保存      │
+                                   └─────────────────────────────┘
+```
+
+---
+
+## 6. テスト
 
 ### 6.1 ユニットテスト
 
@@ -887,7 +946,6 @@ import { ItemService } from '../../../src/services/item.service'
 describe('ItemService', () => {
   let service: ItemService
   let mockEnv: any
-  let mockLoaders: any
 
   beforeEach(() => {
     mockEnv = {
@@ -895,50 +953,66 @@ describe('ItemService', () => {
         get: vi.fn(),
       },
     }
-    mockLoaders = {
-      item: vi.fn(() => ({
-        load: vi.fn(),
-      })),
-      lang: vi.fn(() => ({
-        load: vi.fn(),
-      })),
-    }
-    service = new ItemService(mockEnv, mockLoaders)
+    service = new ItemService(mockEnv)
   })
 
   describe('getById', () => {
-    it('should normalize ID without namespace', async () => {
-      const mockLoader = { load: vi.fn().mockResolvedValue({ id: 'minecraft:diamond' }) }
-      mockLoaders.item.mockReturnValue(mockLoader)
+    it('should return item by id', async () => {
+      const mockItems = [
+        { id: 'minecraft:diamond', name: 'diamond', stackSize: 64 },
+        { id: 'minecraft:stone', name: 'stone', stackSize: 64 },
+      ]
+      mockEnv.KV.get.mockResolvedValue(mockItems)
 
-      await service.getById('1.21', 'diamond')
+      const result = await service.getById('1.21', 'diamond')
 
-      expect(mockLoader.load).toHaveBeenCalledWith('minecraft:diamond')
+      expect(result).toEqual(mockItems[0])
+      expect(mockEnv.KV.get).toHaveBeenCalledWith('items:1.21', 'json')
     })
 
-    it('should not modify ID with namespace', async () => {
-      const mockLoader = { load: vi.fn().mockResolvedValue({ id: 'minecraft:diamond' }) }
-      mockLoaders.item.mockReturnValue(mockLoader)
+    it('should normalize id without namespace', async () => {
+      const mockItems = [{ id: 'minecraft:diamond', name: 'diamond' }]
+      mockEnv.KV.get.mockResolvedValue(mockItems)
 
-      await service.getById('1.21', 'minecraft:diamond')
+      const result = await service.getById('1.21', 'diamond')
 
-      expect(mockLoader.load).toHaveBeenCalledWith('minecraft:diamond')
+      expect(result?.id).toBe('minecraft:diamond')
+    })
+
+    it('should return null for non-existent item', async () => {
+      mockEnv.KV.get.mockResolvedValue([])
+
+      const result = await service.getById('1.21', 'invalid')
+
+      expect(result).toBeNull()
     })
   })
 
   describe('filter', () => {
     it('should filter by search term', async () => {
-      mockEnv.KV.get.mockResolvedValue([
-        { id: 'minecraft:diamond', name: 'diamond' },
-        { id: 'minecraft:gold_ingot', name: 'gold_ingot' },
-        { id: 'minecraft:diamond_sword', name: 'diamond_sword' },
-      ])
+      const mockItems = [
+        { id: 'minecraft:diamond', name: 'diamond', stackSize: 64 },
+        { id: 'minecraft:diamond_sword', name: 'diamond_sword', stackSize: 1 },
+        { id: 'minecraft:stone', name: 'stone', stackSize: 64 },
+      ]
+      mockEnv.KV.get.mockResolvedValue(mockItems)
 
       const result = await service.filter('1.21', { search: 'diamond' })
 
       expect(result).toHaveLength(2)
-      expect(result.map(i => i.name)).toContain('diamond')
-      expect(result.map(i => i.name)).toContain('diamond_sword')
+    })
+
+    it('should filter stackable items', async () => {
+      const mockItems = [
+        { id: 'minecraft:diamond', name: 'diamond', stackSize: 64 },
+        { id: 'minecraft:diamond_sword', name: 'diamond_sword', stackSize: 1 },
+      ]
+      mockEnv.KV.get.mockResolvedValue(mockItems)
+
+      const result = await service.filter('1.21', { stackable: false })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('diamond_sword')
     })
   })
 })
@@ -947,58 +1021,49 @@ describe('ItemService', () => {
 ### 6.2 インテグレーションテスト
 
 ```typescript
-// tests/integration/graphql/items.test.ts
+// tests/integration/rest/assets.test.ts
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createTestClient } from '../helpers/test-client'
+import { unstable_dev } from 'wrangler'
+import type { UnstableDevWorker } from 'wrangler'
 
-describe('GraphQL Items', () => {
-  let client: ReturnType<typeof createTestClient>
+describe('Assets REST API', () => {
+  let worker: UnstableDevWorker
 
-  beforeAll(() => {
-    client = createTestClient()
-  })
-
-  it('should fetch item by id', async () => {
-    const query = `
-      query GetItem($version: String!, $id: String!) {
-        item(version: $version, id: $id) {
-          id
-          name
-          displayName(lang: "en_us")
-          stackSize
-        }
-      }
-    `
-
-    const result = await client.execute(query, {
-      version: '1.21',
-      id: 'diamond',
-    })
-
-    expect(result.errors).toBeUndefined()
-    expect(result.data.item).toMatchObject({
-      id: 'minecraft:diamond',
-      name: 'diamond',
-      displayName: 'Diamond',
-      stackSize: 64,
+  beforeAll(async () => {
+    worker = await unstable_dev('src/index.ts', {
+      experimental: { disableExperimentalWarning: true },
     })
   })
 
-  it('should return null for non-existent item', async () => {
-    const query = `
-      query GetItem($version: String!, $id: String!) {
-        item(version: $version, id: $id) {
-          id
-        }
-      }
-    `
+  afterAll(async () => {
+    await worker.stop()
+  })
 
-    const result = await client.execute(query, {
-      version: '1.21',
-      id: 'not_a_real_item',
+  it('should return 401 without auth header', async () => {
+    const resp = await worker.fetch('/v1/assets/1.21/textures/item/diamond.png')
+    expect(resp.status).toBe(401)
+  })
+
+  it('should return asset with valid token', async () => {
+    const resp = await worker.fetch('/v1/assets/1.21/textures/item/diamond.png', {
+      headers: {
+        Authorization: 'Bearer mcapi_test_token',
+      },
     })
 
-    expect(result.data.item).toBeNull()
+    expect(resp.status).toBe(200)
+    expect(resp.headers.get('Content-Type')).toBe('image/png')
+    expect(resp.headers.get('Cache-Control')).toContain('immutable')
+  })
+
+  it('should return 404 for non-existent asset', async () => {
+    const resp = await worker.fetch('/v1/assets/1.21/textures/item/invalid.png', {
+      headers: {
+        Authorization: 'Bearer mcapi_test_token',
+      },
+    })
+
+    expect(resp.status).toBe(404)
   })
 })
 ```
@@ -1007,7 +1072,7 @@ describe('GraphQL Items', () => {
 
 ## 7. デプロイメント
 
-### 7.1 CI/CDパイプライン
+### 7.1 CI/CD
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -1024,7 +1089,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
       - uses: actions/setup-node@v4
@@ -1041,7 +1106,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
       - uses: actions/setup-node@v4
@@ -1056,7 +1121,7 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
 ```
 
-### 7.2 デプロイ手順
+### 7.2 デプロイコマンド
 
 ```bash
 # 開発環境
@@ -1065,9 +1130,6 @@ pnpm dev
 # ビルド
 pnpm build
 
-# ステージングデプロイ
-pnpm wrangler deploy --env staging
-
-# 本番デプロイ
-pnpm wrangler deploy --env production
+# デプロイ
+pnpm wrangler deploy
 ```
