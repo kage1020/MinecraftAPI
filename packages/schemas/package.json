@@ -1,0 +1,34 @@
+{
+  "name": "@minecraft-api/schemas",
+  "version": "0.1.0",
+  "description": "Zod schemas for Minecraft API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "biome check src"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^0.19.6",
+    "zod": "^3.25.46"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "zod": "^3.25.0"
+  }
+}
