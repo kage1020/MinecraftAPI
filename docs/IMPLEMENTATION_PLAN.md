@@ -30,7 +30,6 @@ minecraft-api/
 │   └── api/                 # Cloudflare Workers API
 ├── packages/
 │   └── schemas/             # Shared Zod schemas
-├── scripts/
 │   └── extraction/          # Data extraction scripts
 ├── package.json
 ├── pnpm-workspace.yaml
@@ -40,24 +39,14 @@ minecraft-api/
 - pnpm workspace設定
 - Turborepo設定
 
-### Step 1.2: Configure TypeScript
-- `tsconfig.json`（ルート・各パッケージ）
-- パス解決設定
-- Strict mode有効化
-
-### Step 1.3: Configure linting and formatting
-- ESLint設定（`@typescript-eslint`）
-- Prettier設定
-- `.editorconfig`
-
-### Step 1.4: Initialize Cloudflare Workers project
+### Step 1.2: Initialize Cloudflare Workers project
 - `apps/api/`にWrangler設定
 - `wrangler.toml`作成
 - `nodejs_compat`フラグ設定
 
-### Step 1.5: Configure environment variables
+### Step 1.3: Configure environment variables
 - `.dev.vars.example`作成
-- 環境変数の型定義（`env.d.ts`）
+- 環境変数の型定義（`pnpm cf-typegen`）
 - KV/R2バインディング定義
 
 ---
@@ -552,7 +541,7 @@ Hono + Pylonによるエンドポイント実装。
 ```
 Week 1-2:
 ├── Phase 1: Project Setup (Sequential)
-│   └── Steps 1.1 → 1.2 → 1.3 → 1.4 → 1.5
+│   └── Steps 1.1 → 1.2
 
 Week 3-4:
 ├── Phase 2: Schema Definition ─────────┐

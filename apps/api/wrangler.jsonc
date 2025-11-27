@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "minecraft-api",
+  "main": "dist/index.js",
+  "compatibility_date": "2024-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "bucket_name": "minecraft-api",
+      "binding": "R2"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "a48df2d4342a43c6a37ab1c973616bd6"
+    }
+  ]
+}
