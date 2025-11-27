@@ -55,14 +55,14 @@ importers:
   packages/schemas:
     dependencies:
       '@hono/zod-openapi':
-        specifier: ^0.19.6
-        version: 0.19.10(hono@4.10.7)(zod@3.25.76)
+        specifier: ^1.1.5
+        version: 1.1.5(hono@4.10.7)(zod@4.1.13)
       zod:
-        specifier: ^3.25.46
-        version: 3.25.76
+        specifier: ^4.1.13
+        version: 4.1.13
     devDependencies:
       tsup:
-        specifier: ^8.5.0
+        specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.6)(typescript@5.9.2)(yaml@2.8.1)
       typescript:
         specifier: 5.9.2
@@ -76,10 +76,10 @@ packages:
     peerDependencies:
       graphql: '*'
 
-  '@asteasolutions/zod-to-openapi@7.3.4':
-    resolution: {integrity: sha512-/2rThQ5zPi9OzVwes6U7lK1+Yvug0iXu25olp7S0XsYmOqnyMfxH7gdSQjn/+DSOHRg7wnotwGJSyL+fBKdnEA==}
+  '@asteasolutions/zod-to-openapi@8.1.0':
+    resolution: {integrity: sha512-tQFxVs05J/6QXXqIzj6rTRk3nj1HFs4pe+uThwE95jL5II2JfpVXkK+CqkO7aT0Do5AYqO6LDrKpleLUFXgY+g==}
     peerDependencies:
-      zod: ^3.20.2
+      zod: ^4.0.0
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -843,12 +843,12 @@ packages:
     peerDependencies:
       hono: '>=3.*'
 
-  '@hono/zod-openapi@0.19.10':
-    resolution: {integrity: sha512-dpoS6DenvoJyvxtQ7Kd633FRZ/Qf74+4+o9s+zZI8pEqnbjdF/DtxIib08WDpCaWabMEJOL5TXpMgNEZvb7hpA==}
+  '@hono/zod-openapi@1.1.5':
+    resolution: {integrity: sha512-EAnY6ad4yt/MUKHx716BEGGOXSl5d0/FOLozOYB/pmSEFq07qrzefKFtBEMAgd3hlpJXjH+4lwgTtlAo+BGBgQ==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       hono: '>=4.3.6'
-      zod: '>=3.0.0'
+      zod: ^4.0.0
 
   '@hono/zod-validator@0.7.5':
     resolution: {integrity: sha512-n4l4hutkfYU07PzRUHBOVzUEn38VSfrh+UVE5d0w4lyfWDOEhzxIupqo5iakRiJL44c3vTuFJBvcmUl8b9agIA==}
@@ -2956,6 +2956,9 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zod@4.1.13:
+    resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
+
 snapshots:
 
   '@ardatan/relay-compiler@12.0.3(graphql@16.12.0)':
@@ -2974,10 +2977,10 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@asteasolutions/zod-to-openapi@7.3.4(zod@3.25.76)':
+  '@asteasolutions/zod-to-openapi@8.1.0(zod@4.1.13)':
     dependencies:
       openapi3-ts: 4.5.0
-      zod: 3.25.76
+      zod: 4.1.13
 
   '@babel/code-frame@7.27.1':
     dependencies:
@@ -3594,18 +3597,18 @@ snapshots:
       hono: 4.10.7
       toucan-js: 4.1.1
 
-  '@hono/zod-openapi@0.19.10(hono@4.10.7)(zod@3.25.76)':
+  '@hono/zod-openapi@1.1.5(hono@4.10.7)(zod@4.1.13)':
     dependencies:
-      '@asteasolutions/zod-to-openapi': 7.3.4(zod@3.25.76)
-      '@hono/zod-validator': 0.7.5(hono@4.10.7)(zod@3.25.76)
+      '@asteasolutions/zod-to-openapi': 8.1.0(zod@4.1.13)
+      '@hono/zod-validator': 0.7.5(hono@4.10.7)(zod@4.1.13)
       hono: 4.10.7
       openapi3-ts: 4.5.0
-      zod: 3.25.76
+      zod: 4.1.13
 
-  '@hono/zod-validator@0.7.5(hono@4.10.7)(zod@3.25.76)':
+  '@hono/zod-validator@0.7.5(hono@4.10.7)(zod@4.1.13)':
     dependencies:
       hono: 4.10.7
-      zod: 3.25.76
+      zod: 4.1.13
 
   '@img/sharp-darwin-arm64@0.33.5':
     optionalDependencies:
@@ -5809,3 +5812,5 @@ snapshots:
   zod@3.22.3: {}
 
   zod@3.25.76: {}
+
+  zod@4.1.13: {}
