@@ -6,7 +6,6 @@
 
 import { Command } from "commander";
 import * as path from "node:path";
-import * as fs from "node:fs/promises";
 
 // Java Edition imports
 import {
@@ -451,108 +450,6 @@ bedrockCmd
       console.log(`\n========== Update complete ==========\n`);
     } catch (error) {
       console.error("Error during update:", error);
-      process.exit(1);
-    }
-  });
-
-// ============================================================================
-// Info Commands
-// ============================================================================
-
-program
-  .command("info <path>")
-  .description("Show info about extracted data")
-  .action(async (dataPath) => {
-    try {
-      const stats = await fs.stat(dataPath);
-
-      if (stats.isDirectory()) {
-        console.log(`\nDirectory: ${dataPath}\n`);
-
-        // List contents
-        const entries = await fs.readdir(dataPath, { withFileTypes: true });
-        const dirs = entries.filter((e) => e.isDirectory());
-        const files = entries.filter((e) => e.isFile());
-
-        console.log(`Directories: ${dirs.length}`);
-        for (const dir of dirs.slice(0, 10)) {
-          console.log(`  📁 ${dir.name}`);
-        }
-
-        console.log(`\nFiles: ${files.length}`);
-        for (const file of files.slice(0, 10)) {
-          console.log(`  📄 ${file.name}`);
-        }
-      } else {
-        console.log(`\nFile: ${dataPath}`);
-        console.log(`Size: ${stats.size} bytes`);
-
-        if (dataPath.endsWith(".json")) {
-          const content = await fs.readFile(dataPath, "utf-8");
-          const data = JSON.parse(content);
-
-          if (Array.isArray(data)) {
-            console.log(`Type: Array with ${data.length} elements`);
-          } else if (typeof data === "object") {
-            console.log(`Type: Object with ${Object.keys(data).length} keys`);
-            console.log("Keys:", Object.keys(data).slice(0, 10).join(", "));
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error reading path:", error);
-      process.exit(1);
-    }
-  });
-
-// ============================================================================
-// Clean Command
-// ============================================================================
-
-program
-  .command("clean")
-  .description("Clean extracted data")
-  .option("-o, --output <dir>", "Output directory", "data")
-  .option("--downloads", "Only clean downloads")
-  .option("--cache", "Only clean cache")
-  .option("-y, --yes", "Skip confirmation")
-  .action(async (options) => {
-    try {
-      const targets: string[] = [];
-
-      if (options.downloads) {
-        targets.push(path.join(options.output, "downloads"));
-      } else if (options.cache) {
-        targets.push(".cache");
-      } else {
-        targets.push(options.output);
-        targets.push(".cache");
-      }
-
-      console.log("\nThe following will be deleted:");
-      for (const target of targets) {
-        console.log(`  ${target}`);
-      }
-
-      if (!options.yes) {
-        console.log("\nUse --yes to confirm deletion");
-        return;
-      }
-
-      for (const target of targets) {
-        try {
-          await fs.rm(target, { recursive: true });
-          console.log(`Deleted: ${target}`);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-            throw error;
-          }
-        }
-      }
-
-      console.log("\nCleanup complete!");
-    } catch (error) {
-      console.error("Error during cleanup:", error);
       process.exit(1);
     }
   });
