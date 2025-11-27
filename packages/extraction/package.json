@@ -1,0 +1,30 @@
+{
+  "name": "@minecraft-api/extraction",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "extract": "tsx src/cli.ts",
+    "lint": "biome lint .",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^22.15.21",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "5.9.2"
+  }
+}
