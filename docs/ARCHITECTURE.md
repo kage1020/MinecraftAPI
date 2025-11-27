@@ -160,6 +160,7 @@ import { getContext } from './context'
 import * as resolvers from './resolvers'
 import type {
   Version,
+  Edition,
   Item,
   Block,
   Recipe,
@@ -181,9 +182,9 @@ import type {
 export const graphql = {
   Query: {
     // バージョン
-    versions: async (): Promise<Version[]> => {
+    versions: async (edition?: Edition): Promise<Version[]> => {
       const ctx = getContext()
-      return resolvers.version.getAll(ctx)
+      return resolvers.version.getAll(ctx, edition)
     },
 
     version: async (id: string): Promise<Version | null> => {
@@ -191,12 +192,25 @@ export const graphql = {
       return resolvers.version.getById(ctx, id)
     },
 
-    latestVersion: async (): Promise<Version> => {
+    latestVersion: async (edition?: Edition): Promise<Version> => {
       const ctx = getContext()
-      return resolvers.version.getLatest(ctx)
+      return resolvers.version.getLatest(ctx, edition)
+    },
+
+    // Java Edition 全バージョン（スナップショット含む）
+    javaVersions: async (): Promise<Version[]> => {
+      const ctx = getContext()
+      return resolvers.version.getAllJava(ctx)
+    },
+
+    // Bedrock Edition 累積データ
+    bedrockVersion: async (): Promise<Version> => {
+      const ctx = getContext()
+      return resolvers.version.getBedrock(ctx)
     },
 
     // アイテム
+    // version: Java版は "1.21", "24w21a" 等、Bedrock版は "bedrock"
     items: async (
       version: string,
       filter?: ItemFilter,
@@ -211,6 +225,16 @@ export const graphql = {
       const ctx = getContext()
       validateVersion(ctx, version)
       return resolvers.item.getById(ctx, version, id)
+    },
+
+    // Bedrock Edition 専用: 特定バージョン時点でのデータ取得
+    bedrockItemsAsOf: async (
+      bedrockVersion: string,
+      filter?: ItemFilter,
+      pagination?: Pagination
+    ): Promise<ItemConnection> => {
+      const ctx = getContext()
+      return resolvers.item.getBedrockAsOf(ctx, bedrockVersion, filter, pagination)
     },
 
     // ブロック
@@ -228,6 +252,15 @@ export const graphql = {
       const ctx = getContext()
       validateVersion(ctx, version)
       return resolvers.block.getById(ctx, version, id)
+    },
+
+    bedrockBlocksAsOf: async (
+      bedrockVersion: string,
+      filter?: BlockFilter,
+      pagination?: Pagination
+    ): Promise<BlockConnection> => {
+      const ctx = getContext()
+      return resolvers.block.getBedrockAsOf(ctx, bedrockVersion, filter, pagination)
     },
 
     // レシピ
@@ -285,7 +318,11 @@ export const graphql = {
 }
 
 function validateVersion(ctx: any, version: string): void {
-  if (!ctx.versions.includes(version)) {
+  // "bedrock" は常に有効
+  if (version === 'bedrock') return
+
+  // Java Edition バージョンチェック
+  if (!ctx.javaVersions.includes(version)) {
     throw new ServiceError(`Invalid version: ${version}`, {
       code: 'INVALID_VERSION',
       statusCode: 400,
@@ -385,7 +422,7 @@ import type { Env } from '../types/env'
 
 export const versionsRoutes = new Hono<{ Bindings: Env }>()
 
-// GET /v1/versions
+// GET /v1/versions - 全エディションのバージョン情報
 versionsRoutes.get('/', async (c) => {
   const versionService = new VersionService(c.env)
   const data = await versionService.getAll()
@@ -394,10 +431,29 @@ versionsRoutes.get('/', async (c) => {
   return c.json(data)
 })
 
+// GET /v1/versions/java - Java Edition 全バージョン（スナップショット含む）
+versionsRoutes.get('/java', async (c) => {
+  const versionService = new VersionService(c.env)
+  const versions = await versionService.getAllJava()
+
+  c.header('Cache-Control', 'public, max-age=3600')
+  return c.json(versions)
+})
+
+// GET /v1/versions/bedrock - Bedrock Edition 情報
+versionsRoutes.get('/bedrock', async (c) => {
+  const versionService = new VersionService(c.env)
+  const bedrock = await versionService.getBedrock()
+
+  c.header('Cache-Control', 'public, max-age=3600')
+  return c.json(bedrock)
+})
+
 // GET /v1/versions/latest
 versionsRoutes.get('/latest', async (c) => {
+  const edition = c.req.query('edition') // 'java' | 'bedrock' | undefined
   const versionService = new VersionService(c.env)
-  const latest = await versionService.getLatest()
+  const latest = await versionService.getLatest(edition)
 
   c.header('Cache-Control', 'public, max-age=3600')
   return c.json(latest)
@@ -558,7 +614,8 @@ export async function rateLimitMiddleware(c: Context<{ Bindings: Env }>, next: N
 ```typescript
 // src/services/item.service.ts
 import type { Env } from '../types/env'
-import type { Item, ItemFilter } from '../graphql/types'
+import type { Item, ItemFilter, BedrockMeta } from '../graphql/types'
+import { compareVersions } from '../utils/version'
 
 export class ItemService {
   constructor(private env: Env) {}
@@ -571,6 +628,25 @@ export class ItemService {
 
   async getAll(version: string): Promise<Item[]> {
     return this.getAllRaw(version)
+  }
+
+  // Bedrock Edition: 特定バージョン時点で存在していたアイテムを取得
+  async getBedrockAsOf(bedrockVersion: string): Promise<Item[]> {
+    const allItems = await this.getAllRaw('bedrock')
+
+    return allItems.filter(item => {
+      if (!item.bedrockMeta) return false
+
+      const { addedIn, removedIn } = item.bedrockMeta
+
+      // 指定バージョン以前に追加された
+      if (compareVersions(addedIn, bedrockVersion) > 0) return false
+
+      // 削除されていない、または指定バージョン以降に削除された
+      if (removedIn && compareVersions(removedIn, bedrockVersion) <= 0) return false
+
+      return true
+    })
   }
 
   async filter(version: string, filter: ItemFilter): Promise<Item[]> {
@@ -628,6 +704,13 @@ export class ItemService {
       )
     }
 
+    // Bedrock Edition: バージョンでフィルタ
+    if (version === 'bedrock' && filter.addedInVersion) {
+      items = items.filter(item =>
+        item.bedrockMeta?.addedIn === filter.addedInVersion
+      )
+    }
+
     return items
   }
 
@@ -655,6 +738,21 @@ export class ItemService {
   private stripNamespace(id: string): string {
     return id.replace('minecraft:', '')
   }
+}
+
+// src/utils/version.ts
+// バージョン比較ユーティリティ
+export function compareVersions(a: string, b: string): number {
+  const partsA = a.split('.').map(Number)
+  const partsB = b.split('.').map(Number)
+
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] ?? 0
+    const numB = partsB[i] ?? 0
+    if (numA < numB) return -1
+    if (numA > numB) return 1
+  }
+  return 0
 }
 ```
 

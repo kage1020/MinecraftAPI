@@ -4,9 +4,17 @@
 
 Minecraft Web APIで提供するデータは、Minecraft公式クライアント/サーバーJARファイルから抽出し、API用のJSON形式に変換して使用する。
 
-### 1.1 データソース
+### 1.1 対象エディション
 
-すべてのデータをMinecraft公式JARファイルから抽出します。
+| エディション | 対象範囲 | データ管理方式 |
+|-------------|---------|---------------|
+| Java Edition (Release) | 全リリースバージョン (1.0〜最新) | バージョン別 |
+| Java Edition (Snapshot) | 全スナップショット | バージョン別 |
+| Bedrock Edition | 最新版のみ | 累積（バージョンメタデータ付き） |
+
+### 1.2 データソース
+
+#### Java Edition
 
 | ソース | 内容 | 抽出方法 |
 |--------|------|---------|
@@ -15,7 +23,18 @@ Minecraft Web APIで提供するデータは、Minecraft公式クライアント
 | Server JAR | レジストリダンプ（ブロック、アイテム、エンティティ等） | `--reports` オプション |
 | Version Manifest | バージョン情報、ダウンロードURL | Mojang API |
 
-### 1.2 処理フロー概要
+#### Bedrock Edition
+
+| ソース | 内容 | 抽出方法 |
+|--------|------|---------|
+| Android APK | アセット（テクスチャ、モデル、サウンド） | APK解凍 |
+| Behavior Packs | レシピ、ルートテーブル、エンティティ定義 | JSON解析 |
+| Resource Packs | テクスチャ、モデル定義、言語ファイル | JSON解析 |
+| Minecraft Wiki | 数値データ（HP、攻撃力等） | 手動更新 + 検証 |
+
+### 1.3 処理フロー概要
+
+#### Java Edition
 
 ```
 ┌─────────────────┐
@@ -28,6 +47,7 @@ Minecraft Web APIで提供するデータは、Minecraft公式クライアント
 │              Download JARs (per version)            │
 │  • Client JAR (アセット、データパック)              │
 │  • Server JAR (レジストリダンプ生成用)              │
+│  ※ 全リリース + 全スナップショットを処理            │
 └────────┬────────────────────────────┬───────────────┘
          │                            │
          ▼                            ▼
@@ -71,6 +91,53 @@ Minecraft Web APIで提供するデータは、Minecraft公式クライアント
 │ KV     │ │ R2     │
 │(データ)│ │(アセット)│
 └────────┘ └────────┘
+```
+
+#### Bedrock Edition
+
+```
+┌─────────────────────────────────────────────────────┐
+│                Bedrock APK / Packs                  │
+│  • Android APK (Google Play / APKMirror)            │
+│  • Behavior Packs (レシピ、エンティティ)            │
+│  • Resource Packs (テクスチャ、モデル)              │
+└────────┬────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│              Extract APK Contents                   │
+│  assets/                                            │
+│  ├── behavior_packs/vanilla/                        │
+│  ├── resource_packs/vanilla/                        │
+│  └── definitions/                                   │
+└────────┬────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│              Data Processing                        │
+│  ┌──────────────────────────────────────────────┐  │
+│  │ Diff with Previous Version                    │  │
+│  │ • 新規追加アイテム/ブロック検出               │  │
+│  │ • 変更されたデータ検出                        │  │
+│  │ • 削除されたデータ検出                        │  │
+│  └──────────────────────────────────────────────┘  │
+└────────┬────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│              Merge with Cumulative Data             │
+│  • 新規データに bedrockMeta.addedIn を設定         │
+│  • 変更データの bedrockMeta.lastModifiedIn を更新  │
+│  • 削除データに bedrockMeta.removedIn を設定       │
+│  • changelog に変更履歴を追加                       │
+└────────┬────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│              Upload                                 │
+│  • KV: items:bedrock, blocks:bedrock など           │
+│  • R2: bedrock/ ディレクトリにアセット              │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -1595,4 +1662,479 @@ jobs:
           CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
           CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
+```
+
+---
+
+## 11. Bedrock Edition データ抽出
+
+### 11.1 APK の取得
+
+Bedrock Edition のデータは Android APK から抽出します。
+
+```typescript
+// scripts/bedrock/download-apk.ts
+import * as fs from 'fs/promises'
+import * as path from 'path'
+
+interface BedrockConfig {
+  version: string
+  apkPath: string  // 手動でダウンロードしたAPKのパス
+  outputDir: string
+}
+
+export async function extractBedrockAPK(config: BedrockConfig) {
+  const { version, apkPath, outputDir } = config
+
+  console.log(`Extracting Bedrock APK for version ${version}...`)
+
+  // APK は ZIP 形式なので解凍
+  const zip = new AdmZip(apkPath)
+  const extractDir = path.join(outputDir, 'bedrock', version)
+
+  await fs.mkdir(extractDir, { recursive: true })
+
+  // 必要なディレクトリのみ抽出
+  const targetPaths = [
+    'assets/behavior_packs/vanilla/',
+    'assets/resource_packs/vanilla/',
+    'assets/definitions/',
+  ]
+
+  const entries = zip.getEntries()
+  for (const entry of entries) {
+    if (targetPaths.some(p => entry.entryName.startsWith(p))) {
+      const outputPath = path.join(extractDir, entry.entryName)
+      await fs.mkdir(path.dirname(outputPath), { recursive: true })
+      await fs.writeFile(outputPath, entry.getData())
+    }
+  }
+
+  console.log(`Extracted to ${extractDir}`)
+  return extractDir
+}
+```
+
+### 11.2 APK の構造
+
+```
+assets/
+├── behavior_packs/
+│   └── vanilla/
+│       ├── recipes/                 # レシピ定義
+│       │   ├── furnace_*.json
+│       │   ├── crafting_table_*.json
+│       │   └── ...
+│       ├── loot_tables/             # ルートテーブル
+│       │   ├── chests/
+│       │   ├── entities/
+│       │   └── blocks/
+│       ├── entities/                # エンティティ定義
+│       │   ├── zombie.json
+│       │   ├── creeper.json
+│       │   └── ...
+│       ├── spawn_rules/             # スポーンルール
+│       └── trading/                 # 村人取引
+│
+├── resource_packs/
+│   └── vanilla/
+│       ├── textures/                # テクスチャ
+│       │   ├── blocks/
+│       │   ├── items/
+│       │   └── entity/
+│       ├── models/                  # モデル（Bedrockはgeometry形式）
+│       │   └── entity/
+│       ├── texts/                   # 言語ファイル
+│       │   ├── ja_JP.lang
+│       │   └── en_US.lang
+│       └── blocks.json              # ブロック定義
+│
+└── definitions/
+    └── item/                        # アイテム定義
+        └── item_texture.json
+```
+
+### 11.3 Bedrock Edition データ処理
+
+```typescript
+// scripts/bedrock/process-items.ts
+import * as fs from 'fs/promises'
+import * as path from 'path'
+
+interface BedrockItem {
+  id: string
+  name: string
+  // ... Java版と同様のプロパティ
+  bedrockMeta: BedrockMeta
+}
+
+interface BedrockMeta {
+  addedIn: string
+  lastModifiedIn: string
+  removedIn: string | null
+  changelog: BedrockChange[]
+  javaEquivalent: string | null
+}
+
+interface BedrockChange {
+  version: string
+  change: string
+}
+
+export async function processBedrockItems(
+  version: string,
+  extractedDir: string,
+  previousData: BedrockItem[]
+): Promise<BedrockItem[]> {
+  // 現在のAPKからアイテムを抽出
+  const currentItems = await extractItemsFromAPK(extractedDir)
+
+  // 既存データとマージ
+  const mergedItems = mergeBedrockData(previousData, currentItems, version)
+
+  return mergedItems
+}
+
+function mergeBedrockData(
+  previous: BedrockItem[],
+  current: ExtractedItem[],
+  version: string
+): BedrockItem[] {
+  const result: BedrockItem[] = []
+  const currentIds = new Set(current.map(i => i.id))
+  const previousIds = new Set(previous.map(i => i.id))
+
+  // 既存アイテムの処理
+  for (const prevItem of previous) {
+    if (currentIds.has(prevItem.id)) {
+      // まだ存在する
+      const currItem = current.find(i => i.id === prevItem.id)!
+
+      // 変更があるかチェック
+      if (hasChanges(prevItem, currItem)) {
+        result.push({
+          ...prevItem,
+          ...currItem,
+          bedrockMeta: {
+            ...prevItem.bedrockMeta,
+            lastModifiedIn: version,
+            changelog: [
+              ...prevItem.bedrockMeta.changelog,
+              { version, change: describeChanges(prevItem, currItem) },
+            ],
+          },
+        })
+      } else {
+        result.push(prevItem)
+      }
+    } else {
+      // 削除された
+      if (!prevItem.bedrockMeta.removedIn) {
+        result.push({
+          ...prevItem,
+          bedrockMeta: {
+            ...prevItem.bedrockMeta,
+            removedIn: version,
+            changelog: [
+              ...prevItem.bedrockMeta.changelog,
+              { version, change: 'removed' },
+            ],
+          },
+        })
+      } else {
+        result.push(prevItem)
+      }
+    }
+  }
+
+  // 新規アイテムの追加
+  for (const currItem of current) {
+    if (!previousIds.has(currItem.id)) {
+      result.push({
+        ...currItem,
+        bedrockMeta: {
+          addedIn: version,
+          lastModifiedIn: version,
+          removedIn: null,
+          changelog: [{ version, change: 'added' }],
+          javaEquivalent: findJavaEquivalent(currItem.id),
+        },
+      })
+    }
+  }
+
+  return result
+}
+
+function hasChanges(prev: BedrockItem, curr: ExtractedItem): boolean {
+  // スタックサイズ、耐久値などの主要プロパティを比較
+  return (
+    prev.stackSize !== curr.stackSize ||
+    prev.durability !== curr.durability ||
+    JSON.stringify(prev.food) !== JSON.stringify(curr.food)
+  )
+}
+
+function describeChanges(prev: BedrockItem, curr: ExtractedItem): string {
+  const changes: string[] = []
+  if (prev.stackSize !== curr.stackSize) {
+    changes.push(`stackSize: ${prev.stackSize} → ${curr.stackSize}`)
+  }
+  if (prev.durability !== curr.durability) {
+    changes.push(`durability: ${prev.durability} → ${curr.durability}`)
+  }
+  return changes.join(', ')
+}
+
+function findJavaEquivalent(bedrockId: string): string | null {
+  // Bedrock と Java で ID が異なる場合のマッピング
+  const idMapping: Record<string, string> = {
+    'minecraft:planks': null,  // Bedrock は単一ID、Java は木材別
+    // ... その他のマッピング
+  }
+  return idMapping[bedrockId] ?? bedrockId
+}
+```
+
+### 11.4 Bedrock Edition 同期スクリプト
+
+```typescript
+// scripts/sync-bedrock.ts
+import { extractBedrockAPK } from './bedrock/download-apk'
+import { processBedrockItems } from './bedrock/process-items'
+import { processBedrockBlocks } from './bedrock/process-blocks'
+import { processBedrockEntities } from './bedrock/process-entities'
+import { processBedrockRecipes } from './bedrock/process-recipes'
+import { uploadToKV } from './upload-kv'
+import { uploadToR2 } from './upload-r2'
+
+async function syncBedrock(version: string, apkPath: string) {
+  const outputDir = './data'
+
+  console.log(`\n========== Syncing Bedrock Edition ${version} ==========\n`)
+
+  // 1. APK 抽出
+  console.log('Step 1: Extracting APK...')
+  const extractedDir = await extractBedrockAPK({
+    version,
+    apkPath,
+    outputDir,
+  })
+
+  // 2. 既存データ取得
+  console.log('Step 2: Fetching previous data...')
+  const previousData = await fetchPreviousBedrockData()
+
+  // 3. データ処理（差分検出 + マージ）
+  console.log('Step 3: Processing data with diff detection...')
+  const [items, blocks, entities, recipes] = await Promise.all([
+    processBedrockItems(version, extractedDir, previousData.items),
+    processBedrockBlocks(version, extractedDir, previousData.blocks),
+    processBedrockEntities(version, extractedDir, previousData.entities),
+    processBedrockRecipes(version, extractedDir),
+  ])
+
+  // 4. KV アップロード
+  console.log('Step 4: Uploading to KV...')
+  await uploadBedrockToKV({ items, blocks, entities, recipes })
+
+  // 5. R2 アップロード
+  console.log('Step 5: Uploading assets to R2...')
+  await uploadBedrockToR2(extractedDir)
+
+  // 6. メタデータ更新
+  console.log('Step 6: Updating metadata...')
+  await updateBedrockMetadata(version)
+
+  console.log(`\n========== Bedrock Edition ${version} synced successfully ==========\n`)
+}
+
+async function fetchPreviousBedrockData() {
+  // KV から既存の累積データを取得
+  const kvApi = `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/storage/kv/namespaces/${process.env.CF_KV_NAMESPACE_ID}`
+
+  const [items, blocks, entities] = await Promise.all([
+    fetch(`${kvApi}/values/items:bedrock`, {
+      headers: { 'Authorization': `Bearer ${process.env.CF_API_TOKEN}` },
+    }).then(r => r.json()).catch(() => []),
+    fetch(`${kvApi}/values/blocks:bedrock`, {
+      headers: { 'Authorization': `Bearer ${process.env.CF_API_TOKEN}` },
+    }).then(r => r.json()).catch(() => []),
+    fetch(`${kvApi}/values/entities:bedrock`, {
+      headers: { 'Authorization': `Bearer ${process.env.CF_API_TOKEN}` },
+    }).then(r => r.json()).catch(() => []),
+  ])
+
+  return { items, blocks, entities }
+}
+
+async function updateBedrockMetadata(version: string) {
+  // bedrock:meta キーにバージョン情報を更新
+  const metadata = {
+    currentVersion: version,
+    lastUpdated: new Date().toISOString(),
+    edition: 'BEDROCK',
+  }
+
+  // KV に保存
+  // ...
+}
+
+// CLI
+const version = process.argv[2]
+const apkPath = process.argv[3]
+
+if (!version || !apkPath) {
+  console.error('Usage: pnpm sync-bedrock <version> <apk-path>')
+  console.error('Example: pnpm sync-bedrock 1.21.0 ./minecraft-1.21.0.apk')
+  process.exit(1)
+}
+
+syncBedrock(version, apkPath)
+```
+
+### 11.5 Java版とBedrock版の差異
+
+| 項目 | Java Edition | Bedrock Edition |
+|------|-------------|-----------------|
+| テクスチャパス | `textures/block/` | `textures/blocks/` |
+| アイテムテクスチャ | `textures/item/` | `textures/items/` |
+| モデル形式 | JSON (block/item states) | JSON (geometry) |
+| 言語ファイル | `.json` 形式 | `.lang` 形式 |
+| レシピ定義 | データパック形式 | Behavior Pack形式 |
+| ブロックID | `minecraft:oak_planks` | `minecraft:planks` (data value) |
+
+### 11.6 ID マッピング
+
+Java版とBedrock版でIDが異なるケースのマッピングを管理します。
+
+```typescript
+// scripts/bedrock/id-mapping.ts
+
+// Bedrock ID → Java ID
+export const BEDROCK_TO_JAVA: Record<string, string | null> = {
+  // 木材（Bedrockは単一ID + data value）
+  'minecraft:planks:0': 'minecraft:oak_planks',
+  'minecraft:planks:1': 'minecraft:spruce_planks',
+  'minecraft:planks:2': 'minecraft:birch_planks',
+  'minecraft:planks:3': 'minecraft:jungle_planks',
+  'minecraft:planks:4': 'minecraft:acacia_planks',
+  'minecraft:planks:5': 'minecraft:dark_oak_planks',
+
+  // 染料（Bedrockは単一ID）
+  'minecraft:dye:0': 'minecraft:ink_sac',
+  'minecraft:dye:1': 'minecraft:red_dye',
+  'minecraft:dye:2': 'minecraft:green_dye',
+  'minecraft:dye:3': 'minecraft:cocoa_beans',
+  'minecraft:dye:4': 'minecraft:lapis_lazuli',
+  // ...
+
+  // Bedrock専用アイテム
+  'minecraft:lodestone_compass': null,  // Java版は別の仕組み
+}
+
+// Java ID → Bedrock ID
+export const JAVA_TO_BEDROCK: Record<string, string> = {
+  'minecraft:oak_planks': 'minecraft:planks:0',
+  'minecraft:spruce_planks': 'minecraft:planks:1',
+  // ...
+}
+```
+
+---
+
+## 12. 全バージョン同期
+
+### 12.1 初期同期（全バージョン）
+
+```typescript
+// scripts/sync-all-versions.ts
+import { downloadJars } from './download-jars'
+import { syncVersion } from './sync-version'
+
+const MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
+
+async function syncAllVersions() {
+  const manifest = await fetch(MANIFEST_URL).then(r => r.json())
+
+  // 全バージョン（リリース + スナップショット）
+  const allVersions = manifest.versions
+
+  console.log(`Found ${allVersions.length} versions to sync`)
+
+  for (const version of allVersions) {
+    try {
+      console.log(`\nSyncing ${version.id} (${version.type})...`)
+      await syncVersion(version.id)
+    } catch (error) {
+      console.error(`Failed to sync ${version.id}:`, error)
+      // エラーログを記録して続行
+    }
+  }
+}
+
+syncAllVersions()
+```
+
+### 12.2 増分同期
+
+```yaml
+# .github/workflows/sync-all.yml
+name: Sync All Versions
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 毎日チェック
+  workflow_dispatch:
+
+jobs:
+  sync-java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - run: pnpm install
+
+      # 新しいバージョンのみ同期
+      - name: Sync new Java versions
+        run: |
+          NEW_VERSIONS=$(pnpm check-new-versions)
+          for VERSION in $NEW_VERSIONS; do
+            pnpm sync-version $VERSION
+          done
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+          CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
+
+  sync-bedrock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: pnpm install
+
+      # Bedrock版の新バージョンチェック（手動トリガーが多い）
+      - name: Check Bedrock update
+        id: check-bedrock
+        run: |
+          # APKMirrorなどから最新バージョンを確認
+          echo "Check for new Bedrock version..."
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 ```

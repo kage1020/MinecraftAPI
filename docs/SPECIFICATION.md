@@ -16,10 +16,36 @@ Minecraftの静的アセット（テクスチャ、モデル、サウンド）�
 
 ### 1.3 対象バージョン
 
-| 種別 | バージョン範囲 |
-|------|---------------|
-| Java Edition | 1.14 〜 最新リリース |
-| スナップショット | オプション対応 |
+| エディション | 対象範囲 | 備考 |
+|-------------|---------|------|
+| Java Edition (Release) | 全リリースバージョン | 1.0〜最新 |
+| Java Edition (Snapshot) | 全スナップショット | 週次スナップショット、Pre-release、Release Candidate含む |
+| Bedrock Edition | 最新版のみ（累積） | バージョン混在データとして提供 |
+
+#### Bedrock Edition の特殊な扱い
+
+Bedrock Editionはプレイヤーが特定バージョンで遊び続けることができない（強制アップデート）ため、以下の方針でデータを管理します：
+
+- **単一の累積データセット**: 特定バージョンごとのデータセットではなく、1つの累積データとして提供
+- **バージョンメタデータ**: 各データ項目に「追加されたバージョン」「最終更新バージョン」を付与
+- **変更履歴**: 削除・変更されたデータも履歴として保持
+
+```
+例: Bedrock Edition のデータ構造
+{
+  "id": "minecraft:copper_block",
+  "name": "copper_block",
+  "bedrockMeta": {
+    "addedIn": "1.17.0",
+    "lastModifiedIn": "1.20.0",
+    "removedIn": null,
+    "changelog": [
+      { "version": "1.17.0", "change": "added" },
+      { "version": "1.20.0", "change": "酸化速度が変更" }
+    ]
+  }
+}
+```
 
 ---
 
@@ -243,19 +269,34 @@ GET /v1/versions/{id}
 ```json
 // GET /v1/versions
 {
-  "versions": [
-    {
-      "id": "1.21",
-      "name": "1.21 - Tricky Trials",
-      "type": "release",
-      "releaseDate": "2024-06-13",
-      "protocol": 767,
-      "dataVersion": 3953
+  "java": {
+    "versions": [
+      {
+        "id": "1.21",
+        "name": "1.21 - Tricky Trials",
+        "type": "release",
+        "releaseDate": "2024-06-13",
+        "protocol": 767,
+        "dataVersion": 3953
+      },
+      {
+        "id": "24w21a",
+        "name": "24w21a",
+        "type": "snapshot",
+        "releaseDate": "2024-05-22",
+        "protocol": 766,
+        "dataVersion": 3940
+      }
+    ],
+    "latest": {
+      "release": "1.21",
+      "snapshot": "24w21a"
     }
-  ],
-  "latest": {
-    "release": "1.21",
-    "snapshot": "24w21a"
+  },
+  "bedrock": {
+    "currentVersion": "1.21.0",
+    "lastUpdated": "2024-06-13",
+    "dataVersion": "bedrock"
   }
 }
 ```
@@ -275,11 +316,14 @@ import { app } from '@getcronit/pylon'
 export const graphql = {
   Query: {
     // バージョン
-    versions: (): Version[] => { /* ... */ },
+    versions: (edition?: Edition): Version[] => { /* ... */ },
     version: (id: string): Version | null => { /* ... */ },
-    latestVersion: (): Version => { /* ... */ },
+    latestVersion: (edition?: Edition): Version => { /* ... */ },
+    javaVersions: (): Version[] => { /* ... */ },     // Java Edition 全バージョン
+    bedrockVersion: (): Version => { /* ... */ },     // Bedrock Edition 累積データ
 
     // アイテム
+    // version: Java版は "1.21", "24w21a" 等、Bedrock版は "bedrock"
     items: (version: string, filter?: ItemFilter, pagination?: Pagination): ItemConnection => { /* ... */ },
     item: (version: string, id: string): Item | null => { /* ... */ },
 
@@ -296,6 +340,11 @@ export const graphql = {
 
     // 検索
     search: (version: string, query: string, types?: SearchType[]): SearchResult => { /* ... */ },
+
+    // Bedrock Edition 専用クエリ
+    // 特定のBedrockバージョン時点でのデータを取得
+    bedrockItemsAsOf: (bedrockVersion: string, filter?: ItemFilter, pagination?: Pagination): ItemConnection => { /* ... */ },
+    bedrockBlocksAsOf: (bedrockVersion: string, filter?: BlockFilter, pagination?: Pagination): BlockConnection => { /* ... */ },
   },
 }
 
@@ -308,12 +357,13 @@ export default app
 
 ```typescript
 interface Version {
-  id: string                    // "1.21"
+  id: string                    // "1.21" or "bedrock"
   name: string                  // "1.21 - Tricky Trials"
   releaseDate: string
   type: VersionType
-  protocol: number
-  dataVersion: number
+  edition: Edition
+  protocol: number | null       // Bedrock は null
+  dataVersion: number | null    // Bedrock は null
 
   // 統計
   itemCount: number
@@ -322,11 +372,19 @@ interface Version {
   recipeCount: number
 }
 
+enum Edition {
+  JAVA = 'JAVA',
+  BEDROCK = 'BEDROCK',
+}
+
 enum VersionType {
   RELEASE = 'RELEASE',
   SNAPSHOT = 'SNAPSHOT',
   PRE_RELEASE = 'PRE_RELEASE',
   RELEASE_CANDIDATE = 'RELEASE_CANDIDATE',
+  OLD_BETA = 'OLD_BETA',
+  OLD_ALPHA = 'OLD_ALPHA',
+  BEDROCK_CUMULATIVE = 'BEDROCK_CUMULATIVE',  // BE版の累積データ
 }
 ```
 
@@ -358,6 +416,23 @@ interface Item {
   // アセットURL
   texture: string
   model: string | null
+
+  // Bedrock Edition メタデータ（BE版データのみ）
+  bedrockMeta: BedrockMeta | null
+}
+
+// Bedrock Edition バージョンメタデータ
+interface BedrockMeta {
+  addedIn: string              // 追加されたバージョン "1.17.0"
+  lastModifiedIn: string       // 最終更新バージョン
+  removedIn: string | null     // 削除されたバージョン（null = 現存）
+  changelog: BedrockChange[]   // 変更履歴
+  javaEquivalent: string | null // 対応するJava版ID（異なる場合）
+}
+
+interface BedrockChange {
+  version: string
+  change: string               // 変更内容の説明
 }
 
 enum Rarity {
@@ -601,12 +676,53 @@ query GetItemWithRecipes {
 }
 ```
 
-### 7.3 静的アセット取得（REST）
+### 7.3 Bedrock Edition クエリ
+
+```graphql
+# Bedrock Edition の現在のデータ取得
+query GetBedrockItems {
+  items(version: "bedrock", pagination: { first: 10 }) {
+    edges {
+      node {
+        id
+        displayName(lang: "ja_jp")
+        bedrockMeta {
+          addedIn
+          lastModifiedIn
+          changelog {
+            version
+            change
+          }
+        }
+      }
+    }
+  }
+}
+
+# 特定のBedrockバージョン時点でのデータ取得
+query GetBedrockItemsAsOf {
+  bedrockItemsAsOf(bedrockVersion: "1.19.0", pagination: { first: 10 }) {
+    edges {
+      node {
+        id
+        displayName(lang: "ja_jp")
+        # 1.19.0時点で存在していたアイテムのみ
+      }
+    }
+  }
+}
+```
+
+### 7.4 静的アセット取得（REST）
 
 ```bash
-# テクスチャ取得
+# Java Edition テクスチャ取得
 curl -H "Authorization: Bearer mcapi_xxx" \
   https://api.example.com/v1/assets/1.21/textures/item/diamond_sword.png
+
+# Bedrock Edition テクスチャ取得
+curl -H "Authorization: Bearer mcapi_xxx" \
+  https://api.example.com/v1/assets/bedrock/textures/items/diamond_sword.png
 
 # モデル取得
 curl -H "Authorization: Bearer mcapi_xxx" \
